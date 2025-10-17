@@ -8,11 +8,14 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	// Generate a new user ID
 	const userId = crypto.randomUUID();
 
+	// Get the origin from the request headers
+	const origin = request.headers.get('origin') || 'http://localhost:5173';
+
 	// Generate registration options
 	const options = await generateRegistrationOptionsForUser({
 		id: userId,
 		username: username || undefined
-	});
+	}, origin);
 
 	// Store the challenge in a cookie for verification
 	cookies.set('reg-challenge', options.challenge, {

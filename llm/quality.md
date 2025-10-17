@@ -30,3 +30,6 @@ Adhere to the following code quality guidelines:
 - update any todo items as you complete them
 - add and update any helpful rules or hints to a @llms/rules.md in this folder as you learn more about this project and my preferences
 - make descriptive git commits as you complete bitesize chunks of new functionality
+
+## UI Validation
+- deploy and then check UI output using the browser rendering mcp tool available to you

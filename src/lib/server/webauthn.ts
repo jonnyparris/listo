@@ -10,8 +10,24 @@ import type { AuthenticatorTransportFuture } from '@simplewebauthn/types';
 
 // WebAuthn configuration
 const rpName = 'Listo';
-const rpID = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+// Note: This runs on the server, so we use environment-based detection
+// For localhost development, we'll get the origin from the request
+// For production, we'll use the deployed domain
+const getConfig = (requestOrigin?: string) => {
+	// If we have a request origin, use it
+	if (requestOrigin) {
+		const url = new URL(requestOrigin);
+		return {
+			rpID: url.hostname,
+			origin: requestOrigin
+		};
+	}
+	// Default for development
+	return {
+		rpID: 'localhost',
+		origin: 'http://localhost:5173'
+	};
+};
 
 export interface StoredCredential {
 	id: string;
@@ -29,7 +45,9 @@ export interface User {
 /**
  * Generate registration options for a new passkey
  */
-export async function generateRegistrationOptionsForUser(user: { id: string; username?: string }) {
+export async function generateRegistrationOptionsForUser(user: { id: string; username?: string }, requestOrigin?: string) {
+	const { rpID } = getConfig(requestOrigin);
+
 	const options = await generateRegistrationOptions({
 		rpName,
 		rpID,
@@ -54,8 +72,11 @@ export async function generateRegistrationOptionsForUser(user: { id: string; use
  */
 export async function verifyRegistration(
 	response: any,
-	expectedChallenge: string
+	expectedChallenge: string,
+	requestOrigin?: string
 ): Promise<VerifiedRegistrationResponse> {
+	const { rpID, origin } = getConfig(requestOrigin);
+
 	return await verifyRegistrationResponse({
 		response,
 		expectedChallenge,
@@ -67,7 +88,9 @@ export async function verifyRegistration(
 /**
  * Generate authentication options for login
  */
-export async function generateAuthenticationOptionsForUser(credentials: StoredCredential[]) {
+export async function generateAuthenticationOptionsForUser(credentials: StoredCredential[], requestOrigin?: string) {
+	const { rpID } = getConfig(requestOrigin);
+
 	const options = await generateAuthenticationOptions({
 		rpID,
 		allowCredentials: credentials.map((cred) => ({
@@ -87,8 +110,11 @@ export async function generateAuthenticationOptionsForUser(credentials: StoredCr
 export async function verifyAuthentication(
 	response: any,
 	expectedChallenge: string,
-	credential: StoredCredential
+	credential: StoredCredential,
+	requestOrigin?: string
 ): Promise<VerifiedAuthenticationResponse> {
+	const { rpID, origin } = getConfig(requestOrigin);
+
 	return await verifyAuthenticationResponse({
 		response,
 		expectedChallenge,

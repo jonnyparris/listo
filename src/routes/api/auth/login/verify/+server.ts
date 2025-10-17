@@ -15,6 +15,9 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	}
 
 	try {
+		// Get the origin from the request headers
+		const origin = request.headers.get('origin') || 'http://localhost:5173';
+
 		// Get the credential from database
 		const credentialId = base64url.encode(new Uint8Array(body.id));
 
@@ -34,7 +37,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			publicKey: base64url.decode(credential.public_key as string),
 			counter: credential.counter as number,
 			transports: credential.transports ? JSON.parse(credential.transports as string) : undefined
-		});
+		}, origin);
 
 		if (!verification.verified) {
 			return json({ error: 'Verification failed' }, { status: 400 });

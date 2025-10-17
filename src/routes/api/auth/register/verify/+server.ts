@@ -18,8 +18,11 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	const userData = JSON.parse(userDataStr);
 
 	try {
+		// Get the origin from the request headers
+		const origin = request.headers.get('origin') || 'http://localhost:5173';
+
 		// Verify the registration response
-		const verification = await verifyRegistration(body, challenge);
+		const verification = await verifyRegistration(body, challenge, origin);
 
 		if (!verification.verified || !verification.registrationInfo) {
 			return json({ error: 'Verification failed' }, { status: 400 });

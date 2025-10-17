@@ -2,12 +2,15 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { generateAuthenticationOptionsForUser, base64url } from '$lib/server/webauthn';
 
-export const POST: RequestHandler = async ({ cookies, platform }) => {
+export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	if (!platform?.env?.DB) {
 		return json({ error: 'Database not available' }, { status: 500 });
 	}
 
 	try {
+		// Get the origin from the request headers
+		const origin = request.headers.get('origin') || 'http://localhost:5173';
+
 		// Get all credentials from the database
 		// In a real app, you might want to filter by username, but for passkey
 		// authentication we can allow any registered credential
@@ -28,7 +31,7 @@ export const POST: RequestHandler = async ({ cookies, platform }) => {
 		}));
 
 		// Generate authentication options
-		const options = await generateAuthenticationOptionsForUser(credentials);
+		const options = await generateAuthenticationOptionsForUser(credentials, origin);
 
 		// Store the challenge in a cookie for verification
 		cookies.set('auth-challenge', options.challenge, {

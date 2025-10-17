@@ -23,6 +23,11 @@ export const dbOperations = {
 		return db.recommendations.add(recommendation);
 	},
 
+	// Get a single recommendation by ID
+	async getRecommendation(id: string) {
+		return db.recommendations.get(id);
+	},
+
 	// Update a recommendation
 	async updateRecommendation(id: string, changes: Partial<LocalRecommendation>) {
 		return db.recommendations.update(id, {

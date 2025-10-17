@@ -519,6 +519,84 @@
 			}
 		};
 	}
+
+	async function handleExport() {
+		try {
+			const allRecs = [...recommendations, ...completedRecs];
+			if (allRecs.length === 0) {
+				toastStore.error('No recommendations to export');
+				return;
+			}
+
+			const exportData = {
+				version: '1.0',
+				exported_at: new Date().toISOString(),
+				user_id: userId,
+				recommendations: allRecs
+			};
+
+			const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `listo-export-${new Date().toISOString().split('T')[0]}.json`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			toastStore.success('Recommendations exported successfully');
+		} catch (error) {
+			console.error('Export failed:', error);
+			toastStore.error('Failed to export recommendations');
+		}
+	}
+
+	async function handleImport() {
+		try {
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = 'application/json';
+
+			input.onchange = async (e) => {
+				const file = (e.target as HTMLInputElement).files?.[0];
+				if (!file) return;
+
+				try {
+					const text = await file.text();
+					const importData = JSON.parse(text);
+
+					if (!importData.recommendations || !Array.isArray(importData.recommendations)) {
+						throw new Error('Invalid export file format');
+					}
+
+					let imported = 0;
+					for (const rec of importData.recommendations) {
+						// Update user_id to current user
+						const newRec = { ...rec, user_id: userId, synced: false };
+
+						// Check if recommendation already exists
+						const existing = await dbOperations.getRecommendation(rec.id);
+						if (!existing) {
+							await dbOperations.addRecommendation(newRec);
+							imported++;
+						}
+					}
+
+					await loadRecommendations();
+					toastStore.success(`Imported ${imported} recommendations`);
+				} catch (error) {
+					console.error('Import failed:', error);
+					toastStore.error('Failed to import recommendations');
+				}
+			};
+
+			input.click();
+		} catch (error) {
+			console.error('Import failed:', error);
+			toastStore.error('Failed to import recommendations');
+		}
+	}
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
@@ -566,8 +644,8 @@
 					title="Settings"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
 						<circle cx="12" cy="12" r="3"></circle>
-						<path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
 					</svg>
 				</button>
 
@@ -585,6 +663,26 @@
 						>
 							About Listo
 						</button>
+						<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+						<button
+							onclick={() => {
+								handleExport();
+								showSettingsMenu = false;
+							}}
+							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+						>
+							Export Data
+						</button>
+						<button
+							onclick={() => {
+								handleImport();
+								showSettingsMenu = false;
+							}}
+							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+						>
+							Import Data
+						</button>
+						<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 						<button
 							onclick={() => {
 								handlePurgeAll();
@@ -601,7 +699,7 @@
 			{#if !isAuthenticated}
 				<button
 					onclick={() => goto('/auth')}
-					class="px-3 py-1 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
+					class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
 					title="Sign in to sync across devices"
 				>
 					Sign In
@@ -630,11 +728,13 @@
 
 		<!-- Header -->
 		<header class="mb-12 text-center flex justify-center">
-			<img
-				src="/Listo_Logo_IntentionalChill.svg"
-				alt="Listo - intentional chill"
-				class="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[400px] h-auto dark:brightness-90"
-			/>
+			<a href="/" class="hover:opacity-80 transition-opacity">
+				<img
+					src="/Listo_Logo_IntentionalChill.svg"
+					alt="Listo - intentional chill"
+					class="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[400px] h-auto text-text dark:text-white"
+				/>
+			</a>
 		</header>
 
 		<!-- View Toggle -->
@@ -810,9 +910,20 @@
 				{#if filteredRecommendations.length === 0}
 					<div class="py-12 text-center">
 						<p class="text-text-muted">
-							{recommendations.length === 0
-								? 'No recommendations yet. Add your first one!'
-								: 'No recommendations match your search.'}
+							{#if recommendations.length === 0}
+								No recommendations yet.{' '}
+								<button
+									onclick={() => {
+										showAddForm = true;
+										focusTitleInput();
+									}}
+									class="text-primary hover:underline font-medium"
+								>
+									Add your first one!
+								</button>
+							{:else}
+								No recommendations match your search.
+							{/if}
 						</p>
 					</div>
 				{:else}
