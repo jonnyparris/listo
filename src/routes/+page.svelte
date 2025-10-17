@@ -117,6 +117,16 @@
 		reviewRating = 0;
 	}
 
+	async function uncompleteRecommendation(id: string) {
+		await dbOperations.updateRecommendation(id, {
+			completed_at: undefined,
+			review: undefined,
+			rating: undefined,
+			synced: false
+		});
+		await loadRecommendations();
+	}
+
 	function resetForm() {
 		formTitle = '';
 		formDescription = '';
@@ -395,13 +405,22 @@
 									{/if}
 								</div>
 
-								<button
-									onclick={() => deleteRecommendation(rec.id)}
-									class="ml-4 rounded-lg px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-									title="Delete"
-								>
-									🗑
-								</button>
+								<div class="ml-4 flex gap-2">
+									<button
+										onclick={() => uncompleteRecommendation(rec.id)}
+										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										title="Move back to active"
+									>
+										↶
+									</button>
+									<button
+										onclick={() => deleteRecommendation(rec.id)}
+										class="rounded-lg px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+										title="Delete"
+									>
+										🗑
+									</button>
+								</div>
 							</div>
 						</Card>
 					{/each}

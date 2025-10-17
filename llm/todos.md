@@ -12,6 +12,7 @@
 Priority features for future development:
 
 ## High Priority
+- [ ] uncomplete a recommendation
 - [ ] Search and filter functionality
 - [ ] TMDB autocomplete for movies/shows
 - [ ] API endpoints for D1 sync
