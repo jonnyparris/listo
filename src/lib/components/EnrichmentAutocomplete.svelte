@@ -105,8 +105,14 @@
 	/>
 
 	{#if loading}
-		<div class="absolute right-3 top-3 text-text-muted">
+		<div class="absolute right-3 top-3 text-text-muted" title="Searching...">
 			<div class="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+		</div>
+	{/if}
+
+	{#if showSuggestions && !loading && suggestions.length === 0 && value.length >= 2}
+		<div class="absolute z-10 mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-card p-4 text-center">
+			<p class="text-sm text-text-muted">No results found for "{value}"</p>
 		</div>
 	{/if}
 
@@ -120,9 +126,9 @@
 					onclick={() => selectSuggestion(suggestion)}
 					class="flex w-full items-start gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0"
 				>
-					{#if suggestion.thumbnail}
+					{#if suggestion.thumbnail || suggestion.imageUrl}
 						<img
-							src={suggestion.thumbnail}
+							src={suggestion.thumbnail || suggestion.imageUrl}
 							alt={suggestion.title}
 							class="h-16 w-12 rounded object-cover flex-shrink-0"
 						/>

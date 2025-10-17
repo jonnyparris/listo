@@ -1,66 +1,13 @@
-# Completed ✓
-
-- [x] edit and delete recommendations
-- [x] update recommendations as completed, with an option to add a review. Reviewed recommendations should be accessible somewhere else
-- [x] Wordmark ("Listo") → Cormorant Garamond SemiBold, letter-spacing 0.02em.
-- [x] Tagline ("intentional chill") → Inter Regular, font-size: 0.9rem, color #6E6E6B.
-- [x] UI Body Text → Inter 400/500, line-height 1.6.
-- [x] Headings → Cormorant Garamond 600–700
-
-# Next Up
-
-Priority features for future development:
-
-## High Priority
-- [x] uncomplete a recommendation
-- [x] Search and filter functionality
-- [x] TMDB autocomplete for movies/shows
-- [x] API endpoints for D1 sync
-- [x] Sync UI with manual sync button
-- [x] WebAuthn passkey authentication
-
-## Medium Priority
-- [x] Additional enrichment plugins (YouTube, Books via Google Books API - no key needed!)
-- [x] Dark mode toggle UI
-- [x] Share/export functionality
-- [x] Mobile responsiveness improvements
-- [x] Keyboard shortcuts
-- [x] Full-screen modal for add/edit form
-- [x] Logo and favicon
-- [x] Autofocus title input when opening add form
-
-## Polish & UX Improvements
-- [x] Replace alert() with toast notifications
-- [x] Replace confirm() with custom modal dialogs
-- [x] Add input validation (don't allow empty titles)
-- [ ] Better loading states for autocomplete
-- [ ] Improve empty state messaging
-- [ ] Add smooth transitions/animations (spring easing)
-- [ ] Error boundary for top-level errors
+- [x] Signin via same passkey method as account creation
+- [x] use spotify enhancement (integrated Spotify for artist/song categories)
+- [x] save a link from the enhancement in the recommendation for ease of consumption after it's saved (spotify_url and youtube_url shown in cards)
+- [x] add subtotals for how many recommendations are in each category
+- [x] make sure the top nav icons are vertically aligned
+- [x] Better loading states for autocomplete (added spinner and "no results" messages)
+- [x] Improve empty state messaging (added icons, headings, and CTAs)
+- [x] Add smooth transitions/animations (spring easing added to tailwind config)
+- [x] Error boundary for top-level errors (created +error.svelte page)
 
 ## Low Priority
 - [ ] Unit tests
 - [ ] E2E tests
-- [x] Performance optimization
-- [x] Deployment to production
-- [x] Documentation for API keys setup
-
-# More considerations (Completed!)
-- [x] Users should be able to optionally signup / login in order to save their recommendations for retrieving later or on other devices. That's going to need a whole new flow. You should still be able to use the site without creating an account, you just won't be able to persist your recommendations beyond your session.
-- [x] The category dropdown looks ugly on Safari. Fix.
-- [x] You should be able to, with caution, purge all your saved recommendations
-- [x] Also add an about page describing the purpose of the site and explaining the increasing importance of human-led personal creation instead of soulless algorithms driving our consumption habits.
-- [x] Add Spotify integration for music autocomplete (artists, songs, genres)
-
-# More Feedback (Completed!)
-- [x] the header logo svg has a fixed white background that doesn't make it very responsive to dark mode. Fix please.
-- [x] the header logo should link back to the home page
-- [x] the setting icon is weird. Use a cog
-- [x] why is the signin buttons so pale?
-- [x] when i click signin I get "D1_ERROR: no such table: credentials: SQLITE_ERROR"
-- [x] when i click create account I get "The RP ID "localhost" is invalid for this domain"
-- [x] "Add you first one!" should be clickable to actually create a first recommendation
-- [x] Use ollama4 with Cloudflare Workers AI to auto suggest the category from freeform text input.
-- [x] Add mass import and export functionality
-- [x] deploy, visit the site with browser rendering and suggest improvements
-- [x] update the readme with latest details, cleanup anything inaccurate

@@ -58,9 +58,12 @@ export async function generateRegistrationOptionsForUser(user: { id: string; use
 		// Prevent users from re-registering existing authenticators
 		excludeCredentials: [],
 		authenticatorSelection: {
-			// Prefer passkeys that are stored on the device
-			residentKey: 'preferred',
-			userVerification: 'preferred'
+			// Require platform authenticators (Touch ID, Face ID, Windows Hello)
+			authenticatorAttachment: 'platform',
+			// Require passkeys that are stored on the device
+			residentKey: 'required',
+			// Require user verification (biometric or PIN)
+			userVerification: 'required'
 		}
 	});
 
@@ -98,7 +101,8 @@ export async function generateAuthenticationOptionsForUser(credentials: StoredCr
 			type: 'public-key',
 			transports: cred.transports
 		})),
-		userVerification: 'preferred'
+		// Require user verification to trigger Touch ID/Face ID
+		userVerification: 'required'
 	});
 
 	return options;

@@ -635,10 +635,10 @@
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
 	<div class="mx-auto max-w-4xl px-4 py-8">
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
-		<div class="flex justify-end gap-2 mb-4">
+		<div class="flex items-center justify-end gap-2 mb-4">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
-				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center"
 				title="Keyboard shortcuts (?)"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -650,7 +650,7 @@
 			<button
 				onclick={handleSync}
 				disabled={syncing || !isAuthenticated}
-				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
 				title={!isAuthenticated ? 'Sign in to sync' : syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
 			>
 				<svg
@@ -673,7 +673,7 @@
 			<div class="relative">
 				<button
 					onclick={() => (showSettingsMenu = !showSettingsMenu)}
-					class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+					class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center"
 					title="Settings"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -777,16 +777,49 @@
 				variant={!showCompleted ? 'primary' : 'ghost'}
 				size="md"
 			>
-				Active ({filteredRecommendations.length})
+				Active ({recommendations.length})
 			</Button>
 			<Button
 				onclick={() => (showCompleted = true)}
 				variant={showCompleted ? 'primary' : 'ghost'}
 				size="md"
 			>
-				Completed ({filteredCompletedRecs.length})
+				Completed ({completedRecs.length})
 			</Button>
 		</div>
+
+		<!-- Category Subtotals -->
+		{#if selectedCategory === 'all' && (recommendations.length > 0 || completedRecs.length > 0)}
+			{@const categoryCounts = categories.reduce((acc, cat) => {
+				const activeCount = recommendations.filter(r => r.category === cat).length;
+				const completedCount = completedRecs.filter(r => r.category === cat).length;
+				const total = activeCount + completedCount;
+				if (total > 0) {
+					acc.push({ category: cat, active: activeCount, completed: completedCount, total });
+				}
+				return acc;
+			}, [] as Array<{ category: string; active: number; completed: number; total: number }>)}
+			{#if categoryCounts.length > 0}
+				<div class="mb-6 p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+					<h3 class="text-sm font-semibold text-text dark:text-white mb-3">By Category</h3>
+					<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+						{#each categoryCounts as { category, active, completed, total }}
+							<button
+								onclick={() => handleCategoryChange(category)}
+								class="text-left p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+							>
+								<div class="text-xs font-medium text-text dark:text-white mb-1">
+									{formatCategory(category)}
+								</div>
+								<div class="text-xs text-text-muted">
+									{total} total · {active} active
+								</div>
+							</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		{/if}
 
 		<!-- Search and Filter -->
 		<div class="mb-8">
@@ -905,7 +938,7 @@
 												onSelect={handleEnrichmentSelect}
 												placeholder={`Search for a ${formCategory}...`}
 											/>
-										{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube'}
+										{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
 											<EnrichmentAutocomplete
 												bind:value={formTitle}
 												category={formCategory}
@@ -963,23 +996,32 @@
 		{#if !showCompleted}
 			<div class="space-y-4">
 				{#if filteredRecommendations.length === 0}
-					<div class="py-12 text-center">
-						<p class="text-text-muted">
-							{#if recommendations.length === 0}
-								No recommendations yet.{' '}
-								<button
-									onclick={() => {
-										showAddForm = true;
-										focusTitleInput();
-									}}
-									class="text-primary hover:underline font-medium"
-								>
-									Add your first one!
-								</button>
-							{:else}
-								No recommendations match your search.
-							{/if}
-						</p>
+					<div class="py-16 text-center">
+						<div class="mb-4">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-text-muted opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+							</svg>
+						</div>
+						{#if recommendations.length === 0}
+							<h3 class="text-lg font-medium text-text dark:text-white mb-2">No recommendations yet</h3>
+							<p class="text-text-muted mb-4">Start building your list of things to watch, read, listen to, and more.</p>
+							<button
+								onclick={() => {
+									showAddForm = true;
+									focusTitleInput();
+								}}
+								class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<line x1="12" y1="5" x2="12" y2="19"></line>
+									<line x1="5" y1="12" x2="19" y2="12"></line>
+								</svg>
+								Add Your First Recommendation
+							</button>
+						{:else}
+							<h3 class="text-lg font-medium text-text dark:text-white mb-2">No matches found</h3>
+							<p class="text-text-muted">Try adjusting your search or filters.</p>
+						{/if}
 					</div>
 				{:else}
 					{#each filteredRecommendations as rec, index (rec.id)}
@@ -1087,6 +1129,38 @@
 												{/each}
 											</div>
 										{/if}
+										{#if rec.metadata?.spotify_url || rec.metadata?.youtube_url}
+											<div class="mb-2 flex gap-2 items-center">
+												{#if rec.metadata?.spotify_url}
+													<a
+														href={rec.metadata.spotify_url}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline"
+														onclick={(e) => e.stopPropagation()}
+													>
+														<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+															<path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+														</svg>
+														Listen
+													</a>
+												{/if}
+												{#if rec.metadata?.youtube_url}
+													<a
+														href={rec.metadata.youtube_url}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline"
+														onclick={(e) => e.stopPropagation()}
+													>
+														<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+															<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+														</svg>
+														Watch
+													</a>
+												{/if}
+											</div>
+										{/if}
 										{#if rec.description}
 											<p class="text-sm text-text-muted line-clamp-3">{rec.description}</p>
 										{/if}
@@ -1138,12 +1212,19 @@
 			<!-- Completed Recommendations -->
 			<div class="space-y-4">
 				{#if filteredCompletedRecs.length === 0}
-					<div class="py-12 text-center">
-						<p class="text-text-muted">
-							{completedRecs.length === 0
-								? 'No completed recommendations yet.'
-								: 'No completed recommendations match your search.'}
-						</p>
+					<div class="py-16 text-center">
+						<div class="mb-4">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-text-muted opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+						</div>
+						{#if completedRecs.length === 0}
+							<h3 class="text-lg font-medium text-text dark:text-white mb-2">No completed items yet</h3>
+							<p class="text-text-muted">Mark recommendations as completed to see them here.</p>
+						{:else}
+							<h3 class="text-lg font-medium text-text dark:text-white mb-2">No matches found</h3>
+							<p class="text-text-muted">Try adjusting your search or filters.</p>
+						{/if}
 					</div>
 				{:else}
 					{#each filteredCompletedRecs as rec, index (rec.id)}
@@ -1191,6 +1272,38 @@
 													{genre}
 												</span>
 											{/each}
+										</div>
+									{/if}
+									{#if rec.metadata?.spotify_url || rec.metadata?.youtube_url}
+										<div class="mb-2 flex gap-2 items-center">
+											{#if rec.metadata?.spotify_url}
+												<a
+													href={rec.metadata.spotify_url}
+													target="_blank"
+													rel="noopener noreferrer"
+													class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline"
+													onclick={(e) => e.stopPropagation()}
+												>
+													<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+														<path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+													</svg>
+													Listen
+												</a>
+											{/if}
+											{#if rec.metadata?.youtube_url}
+												<a
+													href={rec.metadata.youtube_url}
+													target="_blank"
+													rel="noopener noreferrer"
+													class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline"
+													onclick={(e) => e.stopPropagation()}
+												>
+													<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+														<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+													</svg>
+													Watch
+												</a>
+											{/if}
 										</div>
 									{/if}
 									{#if rec.review}

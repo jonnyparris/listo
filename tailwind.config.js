@@ -42,6 +42,11 @@ export default {
 			boxShadow: {
 				'soft': '0 10px 30px -15px rgba(0, 0, 0, 0.08)',
 				'card': '0 20px 40px -20px rgba(0, 0, 0, 0.1)'
+			},
+			transitionTimingFunction: {
+				'spring': 'cubic-bezier(0.4, 0.0, 0.2, 1)',
+				'spring-in': 'cubic-bezier(0.4, 0.0, 1, 1)',
+				'spring-out': 'cubic-bezier(0.0, 0.0, 0.2, 1)'
 			}
 		}
 	},
