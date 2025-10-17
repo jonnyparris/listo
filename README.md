@@ -6,11 +6,16 @@
 
 ## Features
 
+### ✅ Implemented
 - **Simple & Secure**: Passkey login (stubbed for now, ready for WebAuthn)
 - **Category-Aware**: Movies, Shows, YouTube, Podcasts, Music, Books, Restaurants, and more
-- **Smart Autocomplete**: External API integration (TMDB proof-of-concept included)
+- **Smart Autocomplete**: TMDB integration for movies/shows with thumbnails and metadata
+- **Search & Filter**: Real-time search across titles, descriptions, and tags with category filtering
 - **Local-First**: IndexedDB storage with offline support via Dexie.js
-- **Auto-Sync**: Last-write-wins conflict resolution with D1
+- **D1 Sync API**: Backend endpoints for last-write-wins conflict resolution
+- **Dark Mode**: Toggle between light and dark themes with localStorage persistence
+- **CRUD Operations**: Add, edit, delete, complete, and uncomplete recommendations
+- **Rating & Reviews**: 5-star rating system with review text for completed items
 - **Beautiful Design**: Lazy Days aesthetic with calm pastels and thoughtful spacing
 
 ## Tech Stack
@@ -61,10 +66,17 @@
 
    For TMDB integration (movies/shows autocomplete):
    - Get an API key from [TMDB](https://www.themoviedb.org/settings/api)
-   - Update `wrangler.toml`:
-     ```toml
-     [vars]
-     TMDB_API_KEY = "your_tmdb_api_key_here"
+   - Copy `.env.example` to `.env`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Add your API key to `.env`:
+     ```bash
+     TMDB_API_KEY=your_tmdb_api_key_here
+     ```
+   - For production, also update `wrangler.toml` or use Cloudflare secrets:
+     ```bash
+     npx wrangler secret put TMDB_API_KEY
      ```
 
 5. **Start development server**:
@@ -136,11 +148,10 @@ listo/
 
 ### High Priority
 - [ ] Implement WebAuthn passkey authentication
-- [ ] Add API endpoints for D1 sync (`/api/recommendations/sync`)
-- [ ] Implement search/filter UI
-- [ ] Add autocomplete with TMDB integration
+- [ ] Implement actual sync service (periodic background sync)
 - [ ] Build detail view for recommendations
-- [ ] Add delete/edit functionality
+- [ ] Add sharing functionality
+- [ ] Add export feature (JSON, CSV)
 
 ### Medium Priority
 - [ ] Implement additional enrichment plugins:
@@ -148,9 +159,8 @@ listo/
   - [ ] Spotify API
   - [ ] Google Books API
   - [ ] Google Places API (restaurants)
-- [ ] Add dark mode toggle
-- [ ] Implement sharing functionality
-- [ ] Add export feature (JSON, CSV)
+- [ ] Add AI categorization via Cloudflare Workers AI
+- [ ] Implement tagging system
 
 ### Low Priority
 - [ ] Unit tests (Vitest)

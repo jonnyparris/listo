@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createEnrichmentService } from '$lib/services/enrichment';
+import { TMDB_API_KEY } from '$env/static/private';
 
 export const GET: RequestHandler = async ({ url, platform }) => {
 	const query = url.searchParams.get('query');
@@ -10,7 +11,14 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 		return json({ error: 'Missing query or category' }, { status: 400 });
 	}
 
-	const apiKey = platform?.env?.TMDB_API_KEY || '';
+	// Try platform env first (production), then fallback to SvelteKit env (dev)
+	const apiKey = platform?.env?.TMDB_API_KEY || TMDB_API_KEY || '';
+
+	if (!apiKey) {
+		console.warn('TMDB_API_KEY not configured - returning empty results');
+		return json([]);
+	}
+
 	const enrichmentService = createEnrichmentService({ tmdb: apiKey });
 
 	try {
