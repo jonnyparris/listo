@@ -1,16 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Button, Input, Card } from '$lib/components/ui';
+	import SearchBar from '$lib/components/SearchBar.svelte';
+	import TMDBAutocomplete from '$lib/components/TMDBAutocomplete.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { dbOperations } from '$lib/db';
 	import type { LocalRecommendation, Category } from '$lib/types';
+	import type { SearchSuggestion } from '$lib/services/enrichment/types';
 
 	let recommendations = $state<LocalRecommendation[]>([]);
 	let completedRecs = $state<LocalRecommendation[]>([]);
+	let filteredRecommendations = $state<LocalRecommendation[]>([]);
+	let filteredCompletedRecs = $state<LocalRecommendation[]>([]);
 	let showAddForm = $state(false);
 	let showCompleted = $state(false);
 	let editingId = $state<string | null>(null);
 	let completingId = $state<string | null>(null);
 	let userId = $state('');
+
+	// Search state
+	let searchQuery = $state('');
+	let selectedCategory = $state<Category | 'all'>('all');
 
 	// Form state
 	let formTitle = $state('');
@@ -48,6 +58,44 @@
 	async function loadRecommendations() {
 		recommendations = await dbOperations.getAllRecommendations(userId);
 		completedRecs = await dbOperations.getCompletedRecommendations(userId);
+		applyFilters();
+	}
+
+	function applyFilters() {
+		const query = searchQuery.toLowerCase().trim();
+
+		// Filter active recommendations
+		filteredRecommendations = recommendations.filter((rec) => {
+			const matchesCategory = selectedCategory === 'all' || rec.category === selectedCategory;
+			const matchesSearch =
+				!query ||
+				rec.title.toLowerCase().includes(query) ||
+				rec.description?.toLowerCase().includes(query) ||
+				rec.tags?.toLowerCase().includes(query);
+			return matchesCategory && matchesSearch;
+		});
+
+		// Filter completed recommendations
+		filteredCompletedRecs = completedRecs.filter((rec) => {
+			const matchesCategory = selectedCategory === 'all' || rec.category === selectedCategory;
+			const matchesSearch =
+				!query ||
+				rec.title.toLowerCase().includes(query) ||
+				rec.description?.toLowerCase().includes(query) ||
+				rec.review?.toLowerCase().includes(query) ||
+				rec.tags?.toLowerCase().includes(query);
+			return matchesCategory && matchesSearch;
+		});
+	}
+
+	function handleSearch(query: string) {
+		searchQuery = query;
+		applyFilters();
+	}
+
+	function handleCategoryChange(category: Category | 'all') {
+		selectedCategory = category;
+		applyFilters();
 	}
 
 	async function saveRecommendation() {
@@ -149,10 +197,20 @@
 			year: 'numeric'
 		});
 	}
+
+	function handleTMDBSelect(suggestion: SearchSuggestion) {
+		formTitle = suggestion.title;
+		// TODO: Store metadata from suggestion
+	}
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
 	<div class="mx-auto max-w-4xl px-4 py-8">
+		<!-- Theme Toggle (top right) -->
+		<div class="flex justify-end mb-4">
+			<ThemeToggle />
+		</div>
+
 		<!-- Header -->
 		<header class="mb-12 text-center">
 			<h1 class="font-serif text-5xl font-semibold tracking-wordmark text-text dark:text-white mb-2">
@@ -168,15 +226,26 @@
 				variant={!showCompleted ? 'primary' : 'ghost'}
 				size="md"
 			>
-				Active ({recommendations.length})
+				Active ({filteredRecommendations.length})
 			</Button>
 			<Button
 				onclick={() => (showCompleted = true)}
 				variant={showCompleted ? 'primary' : 'ghost'}
 				size="md"
 			>
-				Completed ({completedRecs.length})
+				Completed ({filteredCompletedRecs.length})
 			</Button>
+		</div>
+
+		<!-- Search and Filter -->
+		<div class="mb-8">
+			<SearchBar
+				bind:value={searchQuery}
+				bind:selectedCategory={selectedCategory}
+				onSearch={handleSearch}
+				onCategoryChange={handleCategoryChange}
+				placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
+			/>
 		</div>
 
 		<!-- Add Button (only show on active view) -->
@@ -217,7 +286,16 @@
 							<label for="title" class="mb-2 block text-sm font-medium text-text dark:text-white">
 								Title
 							</label>
-							<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
+							{#if formCategory === 'movie' || formCategory === 'show'}
+								<TMDBAutocomplete
+									bind:value={formTitle}
+									category={formCategory}
+									onSelect={handleTMDBSelect}
+									placeholder={`Search for a ${formCategory}...`}
+								/>
+							{:else}
+								<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
+							{/if}
 						</div>
 
 						<div>
@@ -250,12 +328,16 @@
 		<!-- Active Recommendations -->
 		{#if !showCompleted}
 			<div class="space-y-4">
-				{#if recommendations.length === 0}
+				{#if filteredRecommendations.length === 0}
 					<div class="py-12 text-center">
-						<p class="text-text-muted">No recommendations yet. Add your first one!</p>
+						<p class="text-text-muted">
+							{recommendations.length === 0
+								? 'No recommendations yet. Add your first one!'
+								: 'No recommendations match your search.'}
+						</p>
 					</div>
 				{:else}
-					{#each recommendations as rec (rec.id)}
+					{#each filteredRecommendations as rec (rec.id)}
 						<Card class="hover:scale-[1.01] transition-transform">
 							{#if completingId === rec.id}
 								<!-- Complete Form -->
@@ -368,12 +450,16 @@
 		{:else}
 			<!-- Completed Recommendations -->
 			<div class="space-y-4">
-				{#if completedRecs.length === 0}
+				{#if filteredCompletedRecs.length === 0}
 					<div class="py-12 text-center">
-						<p class="text-text-muted">No completed recommendations yet.</p>
+						<p class="text-text-muted">
+							{completedRecs.length === 0
+								? 'No completed recommendations yet.'
+								: 'No completed recommendations match your search.'}
+						</p>
 					</div>
 				{:else}
-					{#each completedRecs as rec (rec.id)}
+					{#each filteredCompletedRecs as rec (rec.id)}
 						<Card>
 							<div class="flex items-start justify-between">
 								<div class="flex-1">
