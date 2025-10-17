@@ -30,11 +30,14 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 
 		const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
 
+		// Ensure username is null if undefined or empty string (D1 doesn't accept undefined)
+		const username = userData.username && userData.username.trim() ? userData.username.trim() : null;
+
 		// Create user in database
 		await platform.env.DB.prepare(
 			'INSERT INTO users (id, username, created_at, updated_at) VALUES (?, ?, unixepoch(), unixepoch())'
 		)
-			.bind(userData.id, userData.username || null)
+			.bind(userData.id, username)
 			.run();
 
 		// Store credential

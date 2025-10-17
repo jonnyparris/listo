@@ -27,9 +27,12 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	});
 
 	// Store user info for registration completion
+	// Ensure username is either a non-empty string or null (not undefined or empty string)
+	const cleanUsername = username && username.trim() ? username.trim() : null;
+
 	cookies.set(
 		'reg-user',
-		JSON.stringify({ id: userId, username }),
+		JSON.stringify({ id: userId, username: cleanUsername }),
 		{
 			httpOnly: true,
 			secure: true,
