@@ -91,6 +91,28 @@ export class AuthService {
 	}
 
 	/**
+	 * Get current user info
+	 */
+	async getCurrentUser(): Promise<{ authenticated: boolean; userId: string }> {
+		try {
+			const response = await fetch('/api/auth/me');
+
+			if (!response.ok) {
+				throw new Error('Failed to get current user');
+			}
+
+			return await response.json();
+		} catch (error) {
+			console.error('Get current user error:', error);
+			// Fallback to session-only user
+			return {
+				authenticated: false,
+				userId: `session_${crypto.randomUUID()}`
+			};
+		}
+	}
+
+	/**
 	 * Logout
 	 */
 	async logout(): Promise<{ success: boolean; error?: string }> {

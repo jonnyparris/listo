@@ -122,17 +122,25 @@
 				</Button>
 			</form>
 
-			<div class="mt-6 text-center">
+			<div class="mt-6 text-center space-y-3">
 				<button
 					type="button"
 					onclick={() => {
 						mode = mode === 'login' ? 'register' : 'login';
 						error = null;
 					}}
-					class="text-sm text-primary hover:underline"
+					class="text-sm text-primary hover:underline block w-full"
 					disabled={loading}
 				>
 					{mode === 'login' ? "Don't have an account? Create one" : 'Already have an account? Sign in'}
+				</button>
+				<button
+					type="button"
+					onclick={() => goto('/')}
+					class="text-sm text-text-muted hover:text-text dark:hover:text-white transition-colors block w-full"
+					disabled={loading}
+				>
+					Continue without signing in →
 				</button>
 			</div>
 

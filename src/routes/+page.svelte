@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { Button, Input, Card } from '$lib/components/ui';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import TMDBAutocomplete from '$lib/components/TMDBAutocomplete.svelte';
@@ -9,6 +10,7 @@
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import { dbOperations } from '$lib/db';
 	import { syncService } from '$lib/services/sync';
+	import { authService } from '$lib/services/auth';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { LocalRecommendation, Category } from '$lib/types';
 	import type { SearchSuggestion } from '$lib/services/enrichment/types';
@@ -22,6 +24,7 @@
 	let editingId = $state<string | null>(null);
 	let completingId = $state<string | null>(null);
 	let userId = $state('');
+	let isAuthenticated = $state(false);
 
 	// Search state
 	let searchQuery = $state('');
@@ -75,7 +78,11 @@
 	];
 
 	onMount(async () => {
-		userId = 'demo-user';
+		// Get current user (authenticated or session-only)
+		const user = await authService.getCurrentUser();
+		userId = user.userId;
+		isAuthenticated = user.authenticated;
+
 		await loadRecommendations();
 
 		// Global keyboard shortcuts
@@ -380,6 +387,12 @@
 	async function handleSync() {
 		if (syncing) return;
 
+		// Only allow sync for authenticated users
+		if (!isAuthenticated) {
+			toastStore.error('Please sign in to sync your recommendations');
+			return;
+		}
+
 		syncing = true;
 		lastSyncError = null;
 
@@ -387,6 +400,7 @@
 
 		if (result.success) {
 			await loadRecommendations();
+			toastStore.success('Synced successfully');
 		} else {
 			lastSyncError = result.error || 'Sync failed';
 		}
@@ -457,7 +471,7 @@
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
 	<div class="mx-auto max-w-4xl px-4 py-8">
-		<!-- Theme Toggle, Sync, and Help (top right) -->
+		<!-- Theme Toggle, Sync, Help, and Auth (top right) -->
 		<div class="flex justify-end gap-2 mb-4">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
@@ -472,9 +486,9 @@
 			</button>
 			<button
 				onclick={handleSync}
-				disabled={syncing}
+				disabled={syncing || !isAuthenticated}
 				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				title={syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
+				title={!isAuthenticated ? 'Sign in to sync' : syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -491,6 +505,19 @@
 					<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
 				</svg>
 			</button>
+			{#if !isAuthenticated}
+				<button
+					onclick={() => goto('/auth')}
+					class="px-3 py-1 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors"
+					title="Sign in to sync across devices"
+				>
+					Sign In
+				</button>
+			{:else}
+				<div class="flex items-center gap-2">
+					<span class="text-xs text-text-muted px-2">Signed In</span>
+				</div>
+			{/if}
 			<ThemeToggle />
 		</div>
 
