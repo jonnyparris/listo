@@ -6,7 +6,7 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 [[d1_databases]]
 binding = "DB"
 database_name = "listo-db"
-database_id = "PLACEHOLDER_DB_ID" # Replace after creating D1 database
+database_id = "413953c7-19b7-4b63-9e97-ab2973bb08d6"
 
 # KV Namespace for caching (optional)
 # [[kv_namespaces]]
