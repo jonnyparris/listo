@@ -5,6 +5,7 @@
 	import TMDBAutocomplete from '$lib/components/TMDBAutocomplete.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { dbOperations } from '$lib/db';
+	import { syncService } from '$lib/services/sync';
 	import type { LocalRecommendation, Category } from '$lib/types';
 	import type { SearchSuggestion } from '$lib/services/enrichment/types';
 
@@ -37,6 +38,10 @@
 
 	// Keyboard shortcuts help
 	let showKeyboardHelp = $state(false);
+
+	// Sync state
+	let syncing = $state(false);
+	let lastSyncError = $state<string | null>(null);
 
 	const categories: Category[] = [
 		'movie',
@@ -344,11 +349,28 @@
 			formDescription = suggestion.metadata.overview;
 		}
 	}
+
+	async function handleSync() {
+		if (syncing) return;
+
+		syncing = true;
+		lastSyncError = null;
+
+		const result = await syncService.fullSync(userId);
+
+		if (result.success) {
+			await loadRecommendations();
+		} else {
+			lastSyncError = result.error || 'Sync failed';
+		}
+
+		syncing = false;
+	}
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
 	<div class="mx-auto max-w-4xl px-4 py-8">
-		<!-- Theme Toggle and Help (top right) -->
+		<!-- Theme Toggle, Sync, and Help (top right) -->
 		<div class="flex justify-end gap-2 mb-4">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
@@ -361,8 +383,43 @@
 					<line x1="12" y1="17" x2="12.01" y2="17"></line>
 				</svg>
 			</button>
+			<button
+				onclick={handleSync}
+				disabled={syncing}
+				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				title={syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class={syncing ? 'animate-spin' : ''}
+				>
+					<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+				</svg>
+			</button>
 			<ThemeToggle />
 		</div>
+
+		{#if lastSyncError}
+			<div class="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
+				<div class="flex items-center justify-between">
+					<span>Sync error: {lastSyncError}</span>
+					<button
+						onclick={() => (lastSyncError = null)}
+						class="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+					>
+						✕
+					</button>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Header -->
 		<header class="mb-12 text-center flex justify-center">

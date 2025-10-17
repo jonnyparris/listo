@@ -15,7 +15,8 @@ Priority features for future development:
 - [x] uncomplete a recommendation
 - [x] Search and filter functionality
 - [x] TMDB autocomplete for movies/shows
-- [ ] API endpoints for D1 sync
+- [x] API endpoints for D1 sync
+- [x] Sync UI with manual sync button
 - [ ] WebAuthn passkey authentication
 
 ## Medium Priority
