@@ -18,11 +18,14 @@
 Automatic metadata enrichment with:
 - **TMDB** for movies and TV shows (posters, descriptions, genres, ratings)
 - **YouTube API** for video information (thumbnails, durations, view counts)
+- **Spotify** for music (album art, artist info, Spotify links)
 - **Google Books** for book metadata (no API key required!)
 
 ### Local-First Architecture 💾
 - **IndexedDB Storage** - Works offline, syncs when online
-- **Cloud Sync** - Optional backup to Cloudflare D1
+- **Session-Only Mode** - Use without an account, data stays local
+- **Optional Authentication** - Sign in with passkeys to sync across devices
+- **Cloud Sync** - Optional backup to Cloudflare D1 (requires authentication)
 - **Instant Updates** - No waiting for server responses
 
 ### UX Polish ✨
@@ -31,6 +34,8 @@ Automatic metadata enrichment with:
 - 📤 **Native Sharing** - Share recommendations via Web Share API
 - ✏️ **Input Validation** - Prevents empty or invalid entries
 - 🎬 **Smooth Animations** - Polished transitions throughout
+- 🗑️ **Data Control** - Purge all data with double-confirmation safety
+- ℹ️ **About Page** - Learn about intentional chill philosophy
 
 ## Tech Stack
 
@@ -181,22 +186,23 @@ See [llm/todos.md](./llm/todos.md) for detailed progress tracking.
 **Completed** ✅
 - Core CRUD operations with local-first storage
 - Search and filtering by category/keyword/genre
-- Smart autocomplete for movies, shows, books, and YouTube
-- Cloud sync with Cloudflare D1
-- WebAuthn passkey authentication
+- Smart autocomplete for movies, shows, books, YouTube, and music (Spotify)
+- Cloud sync with Cloudflare D1 (optional)
+- WebAuthn passkey authentication (optional)
+- Session-only mode for use without account
 - Dark mode with localStorage persistence
 - Keyboard shortcuts for power users
 - Share functionality with Web Share API
 - Toast notifications and custom modals
 - Input validation and error handling
-
-**In Progress** 🚧
+- Purge all data feature with double-confirmation
+- About page explaining intentional chill philosophy
+- Safari compatibility improvements
 - Performance optimizations
-- Unit and E2E tests
-- Deployment to production
 
 **Future Ideas** 💭
-- Additional enrichment plugins (Spotify, Google Places)
+- Unit and E2E tests
+- Additional enrichment plugins (Google Places for restaurants)
 - AI-powered categorization and tagging
 - Collaborative lists and social features
 - Import/export functionality (JSON, CSV)

@@ -22,6 +22,10 @@ Listo supports several external APIs to enrich your recommendations with metadat
   - Used for: YouTube videos
   - Provides: Thumbnails, descriptions, view counts, durations
 
+- **Spotify Web API** - Music metadata
+  - Used for: Artists, Songs, Genres
+  - Provides: Album art, artist info, Spotify links, popularity scores
+
 ## Setup Instructions
 
 ### 1. TMDB API Key
@@ -65,7 +69,28 @@ echo "TMDB_API_KEY=your_api_key_here" >> .env
 echo "YOUTUBE_API_KEY=your_api_key_here" >> .env
 ```
 
-### 3. Environment File Template
+### 3. Spotify Web API Credentials
+
+**Get your credentials:**
+1. Visit [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Log in with your Spotify account
+3. Click "Create app"
+4. Fill out the application form:
+   - App name: "Listo" (or your preferred name)
+   - App description: "Personal recommendation tracker"
+   - Redirect URI: Not needed for this integration
+   - Select "Web API" as API to use
+5. Accept the terms and click "Create"
+6. Copy your Client ID and Client Secret
+
+**Add to your project:**
+```bash
+# Add to .env file
+echo "SPOTIFY_CLIENT_ID=your_client_id_here" >> .env
+echo "SPOTIFY_CLIENT_SECRET=your_client_secret_here" >> .env
+```
+
+### 4. Environment File Template
 
 Create a `.env` file in your project root with the following structure:
 
@@ -77,6 +102,11 @@ TMDB_API_KEY=your_tmdb_api_key_here
 # YouTube Data API
 # Get your key at: https://console.cloud.google.com/
 YOUTUBE_API_KEY=your_youtube_api_key_here
+
+# Spotify Web API
+# Get your credentials at: https://developer.spotify.com/dashboard
+SPOTIFY_CLIENT_ID=your_client_id_here
+SPOTIFY_CLIENT_SECRET=your_client_secret_here
 ```
 
 ## Deployment (Cloudflare Pages)
@@ -85,11 +115,15 @@ For production deployment, you'll need to add these environment variables to you
 
 1. Go to your Cloudflare dashboard
 2. Navigate to Pages → Your project → Settings → Environment variables
-3. Add each API key:
+3. Add each API key/credential:
    - Variable name: `TMDB_API_KEY`
    - Value: Your TMDB API key
    - Variable name: `YOUTUBE_API_KEY`
    - Value: Your YouTube API key
+   - Variable name: `SPOTIFY_CLIENT_ID`
+   - Value: Your Spotify Client ID
+   - Variable name: `SPOTIFY_CLIENT_SECRET`
+   - Value: Your Spotify Client Secret
 4. Save and redeploy
 
 ## Feature Availability Without API Keys
@@ -98,6 +132,7 @@ For production deployment, you'll need to add these environment variables to you
 |---------|----------------|--------------|
 | Movies/Shows autocomplete | ❌ Manual entry only | ✅ Search TMDB database |
 | YouTube autocomplete | ❌ Manual entry only | ✅ Search videos |
+| Music autocomplete | ❌ Manual entry only | ✅ Search Spotify |
 | Books autocomplete | ✅ Works perfectly! | ✅ Works perfectly! |
 | Add recommendations | ✅ All categories work | ✅ All categories work |
 | Local storage | ✅ Full functionality | ✅ Full functionality |
@@ -145,6 +180,7 @@ All the APIs used in Listo have generous free tiers:
 
 - **TMDB**: Free (no limits for personal use)
 - **YouTube Data API**: Free up to 10,000 units/day
+- **Spotify Web API**: Free (no limits for personal use with Client Credentials flow)
 - **Google Books**: Free (no API key required)
 
 For typical personal use, you should never need to pay for these APIs.
