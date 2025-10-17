@@ -8,7 +8,7 @@ export class ListoDatabase extends Dexie {
 	constructor() {
 		super('ListoDB');
 		this.version(1).stores({
-			recommendations: 'id, user_id, category, updated_at, synced, deleted_at'
+			recommendations: 'id, user_id, category, updated_at, synced, deleted_at, completed_at'
 		});
 	}
 }
@@ -31,14 +31,24 @@ export const dbOperations = {
 		});
 	},
 
-	// Get all recommendations (excluding soft-deleted)
+	// Get all recommendations (excluding soft-deleted and completed)
 	async getAllRecommendations(userId: string) {
 		return db.recommendations
 			.where('user_id')
 			.equals(userId)
-			.and((rec) => !rec.deleted_at)
+			.and((rec) => !rec.deleted_at && !rec.completed_at)
 			.reverse()
 			.sortBy('updated_at');
+	},
+
+	// Get completed recommendations
+	async getCompletedRecommendations(userId: string) {
+		return db.recommendations
+			.where('user_id')
+			.equals(userId)
+			.and((rec) => !rec.deleted_at && rec.completed_at)
+			.reverse()
+			.sortBy('completed_at');
 	},
 
 	// Get recommendations by category

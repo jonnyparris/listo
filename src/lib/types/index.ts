@@ -33,6 +33,9 @@ export interface Recommendation {
 	created_at: number;
 	updated_at: number;
 	deleted_at?: number;
+	completed_at?: number;
+	review?: string;
+	rating?: number; // 1-5 stars
 }
 
 // Metadata types for different categories

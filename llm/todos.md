@@ -1,0 +1,6 @@
+- [] edit and delete recommendations
+- [] update recommendations as completed, with an option to add a review. Reviewed recommendations should be accessible somewhere else
+- [] Wordmark (“Listo”) → Cormorant Garamond SemiBold, letter-spacing 0.02em.
+- [] Tagline (“intentional chill”) → Inter Regular, font-size: 0.9rem, color #6E6E6B.
+- [] UI Body Text → Inter 400/500, line-height 1.6.
+- [] Headings → Cormorant Garamond 600–700 or Inter 600 if you prefer sans-only mode.

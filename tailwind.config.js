@@ -26,8 +26,14 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Inter', 'Satoshi', 'system-ui', 'sans-serif'],
-				serif: ['Fraunces', 'Libre Baskerville', 'Georgia', 'serif']
+				sans: ['Inter', 'system-ui', 'sans-serif'],
+				serif: ['Cormorant Garamond', 'Georgia', 'serif']
+			},
+			letterSpacing: {
+				'wordmark': '0.02em'
+			},
+			lineHeight: {
+				'body': '1.6'
 			},
 			borderRadius: {
 				'2xl': '1.25rem',
