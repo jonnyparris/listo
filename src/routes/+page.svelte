@@ -102,13 +102,16 @@
 	async function saveRecommendation() {
 		if (!formTitle.trim()) return;
 
+		// Convert metadata to plain object to avoid Proxy serialization issues
+		const plainMetadata = formMetadata ? JSON.parse(JSON.stringify(formMetadata)) : undefined;
+
 		if (editingId) {
 			// Update existing
 			await dbOperations.updateRecommendation(editingId, {
 				title: formTitle.trim(),
 				category: formCategory,
 				description: formDescription.trim() || undefined,
-				metadata: formMetadata,
+				metadata: plainMetadata,
 				synced: false
 			});
 		} else {
@@ -119,7 +122,7 @@
 				category: formCategory,
 				title: formTitle.trim(),
 				description: formDescription.trim() || undefined,
-				metadata: formMetadata,
+				metadata: plainMetadata,
 				created_at: Math.floor(Date.now() / 1000),
 				updated_at: Math.floor(Date.now() / 1000),
 				synced: false
