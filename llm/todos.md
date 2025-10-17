@@ -45,8 +45,9 @@ Priority features for future development:
 - [x] Deployment to production
 - [x] Documentation for API keys setup
 
-# More considerations
-- Users should be able to optionally signup / login in order to save their recommendations for retrieving later or on other devices. That's going to need a whole new flow. You should still be able to use the site without creating an account, you just won't be able to persist your recommendations beyond your session.
-- The category dropdown looks ugly on Safari. Fix.
-- You should be able to, with caution, purge all your saved recommendations
-- Also add an about page describing the purpose of the site and explaining the increasing importance of human-led personal creation instead of soulless algorithms driving our consumption habits.
+# More considerations (Completed!)
+- [x] Users should be able to optionally signup / login in order to save their recommendations for retrieving later or on other devices. That's going to need a whole new flow. You should still be able to use the site without creating an account, you just won't be able to persist your recommendations beyond your session.
+- [x] The category dropdown looks ugly on Safari. Fix.
+- [x] You should be able to, with caution, purge all your saved recommendations
+- [x] Also add an about page describing the purpose of the site and explaining the increasing importance of human-led personal creation instead of soulless algorithms driving our consumption habits.
+- [x] Add Spotify integration for music autocomplete (artists, songs, genres)
