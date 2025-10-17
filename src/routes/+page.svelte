@@ -92,6 +92,7 @@
 			if (e.key === 'n' && !showCompleted && !showAddForm) {
 				e.preventDefault();
 				showAddForm = true;
+				focusTitleInput();
 			}
 
 			// / - Focus search
@@ -257,7 +258,9 @@
 		formTitle = rec.title;
 		formCategory = rec.category;
 		formDescription = rec.description || '';
+		formMetadata = rec.metadata;
 		showAddForm = true;
+		focusTitleInput();
 	}
 
 	async function deleteRecommendation(id: string) {
@@ -306,6 +309,15 @@
 		formMetadata = undefined;
 		showAddForm = false;
 		editingId = null;
+	}
+
+	function focusTitleInput() {
+		setTimeout(() => {
+			const titleInput = document.querySelector('#title') as HTMLInputElement;
+			if (titleInput) {
+				titleInput.focus();
+			}
+		}, 100);
 	}
 
 	function formatCategory(cat: string): string {
@@ -393,7 +405,10 @@
 		<!-- Floating Action Button -->
 		{#if !showCompleted && !showAddForm}
 			<button
-				onclick={() => (showAddForm = true)}
+				onclick={() => {
+					showAddForm = true;
+					focusTitleInput();
+				}}
 				class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-secondary shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center text-white text-2xl z-50"
 				aria-label="Add recommendation"
 			>

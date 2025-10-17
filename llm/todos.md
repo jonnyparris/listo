@@ -13,20 +13,23 @@ Priority features for future development:
 
 ## High Priority
 - [x] uncomplete a recommendation
-- [ ] Search and filter functionality
-- [ ] TMDB autocomplete for movies/shows
+- [x] Search and filter functionality
+- [x] TMDB autocomplete for movies/shows
 - [ ] API endpoints for D1 sync
 - [ ] WebAuthn passkey authentication
 
 ## Medium Priority
 - [ ] Additional enrichment plugins (YouTube, Spotify, Books, etc.)
-- [ ] Dark mode toggle UI
+- [x] Dark mode toggle UI
 - [ ] Share/export functionality
-- [ ] Mobile responsiveness improvements
+- [x] Mobile responsiveness improvements
+- [x] Keyboard shortcuts
+- [x] Full-screen modal for add/edit form
+- [x] Logo and favicon
+- [x] Autofocus title input when opening add form
 
 ## Low Priority
 - [ ] Unit tests
 - [ ] E2E tests
 - [ ] Performance optimization
 - [ ] Deployment to production
-- [ ] autofocus the text input when user clicks to add a recommendation
