@@ -35,21 +35,24 @@
    npm install
    ```
 
-2. **Create a D1 database**:
+2. **Authenticate with Cloudflare**:
    ```bash
+   npx wrangler login
+   ```
+
+3. **Run setup script** (automated setup):
+   ```bash
+   ./setup.sh
+   ```
+
+   Or do it manually:
+
+   ```bash
+   # Create D1 database
    npx wrangler d1 create listo-db
-   ```
 
-   Copy the `database_id` from the output and update `wrangler.toml`:
-   ```toml
-   [[d1_databases]]
-   binding = "DB"
-   database_name = "listo-db"
-   database_id = "YOUR_DATABASE_ID_HERE"
-   ```
-
-3. **Initialize the database schema**:
-   ```bash
+   # Copy database_id from output and update wrangler.toml
+   # Then initialize schema:
    npx wrangler d1 execute listo-db --local --file=./schema.sql
    npx wrangler d1 execute listo-db --remote --file=./schema.sql
    ```
