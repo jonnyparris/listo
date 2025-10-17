@@ -87,11 +87,18 @@
 		// Delay to allow click on suggestion
 		setTimeout(() => {
 			showSuggestions = false;
-		}, 200);
+		}, 150);
+	}
+
+	function handleClickOutside(e: MouseEvent) {
+		const target = e.target as HTMLElement;
+		if (!target.closest('.tmdb-autocomplete-container')) {
+			showSuggestions = false;
+		}
 	}
 </script>
 
-<div class="relative">
+<div class="relative tmdb-autocomplete-container">
 	<Input
 		{value}
 		{placeholder}

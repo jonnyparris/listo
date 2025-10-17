@@ -68,23 +68,27 @@
 		// Filter active recommendations
 		filteredRecommendations = recommendations.filter((rec) => {
 			const matchesCategory = selectedCategory === 'all' || rec.category === selectedCategory;
+			const genresText = rec.metadata?.genres?.join(' ').toLowerCase() || '';
 			const matchesSearch =
 				!query ||
 				rec.title.toLowerCase().includes(query) ||
 				rec.description?.toLowerCase().includes(query) ||
-				rec.tags?.toLowerCase().includes(query);
+				rec.tags?.toLowerCase().includes(query) ||
+				genresText.includes(query);
 			return matchesCategory && matchesSearch;
 		});
 
 		// Filter completed recommendations
 		filteredCompletedRecs = completedRecs.filter((rec) => {
 			const matchesCategory = selectedCategory === 'all' || rec.category === selectedCategory;
+			const genresText = rec.metadata?.genres?.join(' ').toLowerCase() || '';
 			const matchesSearch =
 				!query ||
 				rec.title.toLowerCase().includes(query) ||
 				rec.description?.toLowerCase().includes(query) ||
 				rec.review?.toLowerCase().includes(query) ||
-				rec.tags?.toLowerCase().includes(query);
+				rec.tags?.toLowerCase().includes(query) ||
+				genresText.includes(query);
 			return matchesCategory && matchesSearch;
 		});
 	}
@@ -260,18 +264,35 @@
 			/>
 		</div>
 
-		<!-- Add Button (only show on active view) -->
-		{#if !showCompleted}
-			<div class="mb-8 flex justify-center">
-				<Button onclick={() => (showAddForm = !showAddForm)} variant="secondary" size="lg">
-					{showAddForm ? 'Cancel' : editingId ? 'Edit Recommendation' : '+ Add Recommendation'}
-				</Button>
-			</div>
+		<!-- Floating Action Button -->
+		{#if !showCompleted && !showAddForm}
+			<button
+				onclick={() => (showAddForm = true)}
+				class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-secondary shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center text-white text-2xl z-50"
+				aria-label="Add recommendation"
+			>
+				+
+			</button>
 		{/if}
 
 		<!-- Add/Edit Form -->
 		{#if showAddForm && !showCompleted}
 			<Card class="mb-8">
+				<div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+					<h2 class="text-xl font-semibold text-text dark:text-white">
+						{editingId ? 'Edit Recommendation' : 'Add Recommendation'}
+					</h2>
+					<button
+						onclick={() => resetForm()}
+						class="text-text-muted hover:text-text dark:hover:text-white transition-colors"
+						aria-label="Close"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+				</div>
 				<form
 					onsubmit={(e) => {
 						e.preventDefault();
@@ -326,11 +347,10 @@
 							></textarea>
 						</div>
 
-						<div class="flex gap-3">
-							<Button type="submit" variant="primary" class="flex-1">
+						<div>
+							<Button type="submit" variant="primary" class="w-full">
 								{editingId ? 'Update' : 'Save'}
 							</Button>
-							<Button type="button" variant="ghost" onclick={() => resetForm()}>Cancel</Button>
 						</div>
 					</div>
 				</form>
