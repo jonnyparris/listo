@@ -28,9 +28,15 @@
 
 		clearTimeout(debounceTimer);
 
+		// Close suggestions and clear if input is too short
 		if (value.length < 2) {
 			suggestions = [];
 			showSuggestions = false;
+			return;
+		}
+
+		// Only search for movie/show categories
+		if (!['movie', 'show'].includes(category)) {
 			return;
 		}
 
@@ -87,12 +93,11 @@
 		// Delay to allow click on suggestion
 		setTimeout(() => {
 			showSuggestions = false;
-		}, 150);
+		}, 200);
 	}
 
-	function handleClickOutside(e: MouseEvent) {
-		const target = e.target as HTMLElement;
-		if (!target.closest('.tmdb-autocomplete-container')) {
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
 			showSuggestions = false;
 		}
 	}
@@ -105,6 +110,7 @@
 		oninput={handleInput}
 		onblur={handleBlur}
 		onfocus={() => suggestions.length > 0 && (showSuggestions = true)}
+		onkeydown={handleKeydown}
 	/>
 
 	{#if loading}

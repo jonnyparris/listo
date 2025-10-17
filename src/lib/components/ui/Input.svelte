@@ -6,6 +6,9 @@
 		disabled?: boolean;
 		class?: string;
 		oninput?: (event: Event) => void;
+		onblur?: (event: FocusEvent) => void;
+		onfocus?: (event: FocusEvent) => void;
+		onkeydown?: (event: KeyboardEvent) => void;
 	}
 
 	let {
@@ -14,7 +17,10 @@
 		type = 'text',
 		disabled = false,
 		class: className = '',
-		oninput
+		oninput,
+		onblur,
+		onfocus,
+		onkeydown
 	}: Props = $props();
 
 	const classes = $derived(
@@ -29,4 +35,7 @@
 	{disabled}
 	class={classes}
 	{oninput}
+	{onblur}
+	{onfocus}
+	{onkeydown}
 />

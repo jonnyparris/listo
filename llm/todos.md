@@ -29,3 +29,4 @@ Priority features for future development:
 - [ ] E2E tests
 - [ ] Performance optimization
 - [ ] Deployment to production
+- [ ] autofocus the text input when user clicks to add a recommendation
