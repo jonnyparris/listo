@@ -1,22 +1,30 @@
 import type { RequestEvent } from '@sveltejs/kit';
 
-// TODO: Replace with WebAuthn implementation
-// This is a stubbed auth system for development
+/**
+ * Get current user from session (WebAuthn)
+ * Returns user ID if authenticated, null otherwise
+ */
+export async function getCurrentUser(event: RequestEvent): Promise<string | null> {
+	// Check both new WebAuthn cookie and legacy session cookie
+	const webAuthnUserId = event.cookies.get('user-id');
+	const legacyUserId = event.cookies.get('session_user_id');
+
+	return webAuthnUserId || legacyUserId || null;
+}
 
 /**
- * Get or create a user session
- * For now, we'll use a simple cookie-based session
- * In production, this should be replaced with WebAuthn
+ * Get or create a demo user for development
+ * In production, users should authenticate via /auth page
  */
-export async function getOrCreateUser(event: RequestEvent): Promise<string> {
-	const sessionCookie = event.cookies.get('session_user_id');
+export async function getOrCreateDemoUser(event: RequestEvent): Promise<string> {
+	const existingUserId = await getCurrentUser(event);
 
-	if (sessionCookie) {
-		return sessionCookie;
+	if (existingUserId) {
+		return existingUserId;
 	}
 
-	// Generate a temporary user ID (in production, this comes from WebAuthn)
-	const userId = `user_${crypto.randomUUID()}`;
+	// Create a demo user for development/testing
+	const userId = `demo-${crypto.randomUUID()}`;
 
 	// Store in D1 if available
 	if (event.platform?.env.DB) {
@@ -27,38 +35,39 @@ export async function getOrCreateUser(event: RequestEvent): Promise<string> {
 				.bind(userId)
 				.run();
 		} catch (error) {
-			console.error('Failed to create user in D1:', error);
+			console.error('Failed to create demo user in D1:', error);
 		}
 	}
 
-	// Set cookie for 1 year
-	event.cookies.set('session_user_id', userId, {
+	// Set session cookie
+	event.cookies.set('user-id', userId, {
 		path: '/',
 		httpOnly: true,
-		sameSite: 'lax',
+		sameSite: 'strict',
 		secure: true,
-		maxAge: 60 * 60 * 24 * 365
+		maxAge: 60 * 60 * 24 * 30 // 30 days
 	});
 
 	return userId;
 }
 
 /**
- * Get current user from session
+ * Require authentication - redirect to auth page if not logged in
  */
-export async function getCurrentUser(event: RequestEvent): Promise<string | null> {
-	return event.cookies.get('session_user_id') || null;
+export async function requireAuth(event: RequestEvent): Promise<string> {
+	const userId = await getCurrentUser(event);
+
+	if (!userId) {
+		throw new Error('Authentication required');
+	}
+
+	return userId;
 }
 
 /**
  * Logout user
  */
 export async function logout(event: RequestEvent): Promise<void> {
-	event.cookies.delete('session_user_id', { path: '/' });
+	event.cookies.delete('user-id', { path: '/' });
+	event.cookies.delete('session_user_id', { path: '/' }); // Legacy cookie
 }
-
-// TODO: Implement WebAuthn
-// - Registration flow
-// - Authentication flow
-// - Credential storage in D1
-// - Fallback to email magic link

@@ -13,6 +13,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"dependencies": {
+		"@simplewebauthn/browser": "^13.2.2",
+		"@simplewebauthn/server": "^13.2.2",
 		"dexie": "^4.0.12"
 	},
 	"devDependencies": {

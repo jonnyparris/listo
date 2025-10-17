@@ -1,9 +1,25 @@
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
 	id TEXT PRIMARY KEY,
+	username TEXT UNIQUE, -- Optional display name
 	created_at INTEGER NOT NULL DEFAULT (unixepoch()),
 	updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
+
+-- WebAuthn credentials table
+CREATE TABLE IF NOT EXISTS credentials (
+	id TEXT PRIMARY KEY, -- credential ID (base64url encoded)
+	user_id TEXT NOT NULL,
+	public_key TEXT NOT NULL, -- public key (base64url encoded)
+	counter INTEGER NOT NULL DEFAULT 0, -- signature counter for replay protection
+	transports TEXT, -- JSON array of authenticator transports
+	created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+	last_used_at INTEGER,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Index for credentials lookup
+CREATE INDEX IF NOT EXISTS idx_credentials_user_id ON credentials(user_id);
 
 -- Recommendations table
 CREATE TABLE IF NOT EXISTS recommendations (
