@@ -1,0 +1,25 @@
+name = "listo"
+compatibility_date = "2025-10-11"
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "listo-db"
+database_id = "PLACEHOLDER_DB_ID" # Replace after creating D1 database
+
+# KV Namespace for caching (optional)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "PLACEHOLDER_KV_ID"
+
+# Environment variables
+[vars]
+TMDB_API_KEY = "" # Add your TMDB API key
+
+# Production environment
+[env.production]
+vars = { }
+
+# Secrets (use `wrangler secret put` for sensitive values)
+# - TMDB_API_KEY
