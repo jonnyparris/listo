@@ -20,11 +20,31 @@ export class TMDBPlugin implements EnrichmentPlugin {
 		}
 
 		const endpoint = category === 'movie' ? '/search/movie' : '/search/tv';
-		const url = `${this.baseUrl}${endpoint}?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`;
+
+		// Check if this is a v4 JWT token or v3 API key
+		const isV4Token = this.apiKey.startsWith('eyJ');
+
+		let url: string;
+		let headers: HeadersInit;
+
+		if (isV4Token) {
+			// TMDB API v4 with Bearer token
+			url = `https://api.themoviedb.org/4${endpoint}?query=${encodeURIComponent(query)}`;
+			headers = {
+				'Authorization': `Bearer ${this.apiKey}`,
+				'Content-Type': 'application/json'
+			};
+		} else {
+			// TMDB API v3 with API key
+			url = `${this.baseUrl}${endpoint}?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`;
+			headers = {};
+		}
 
 		try {
-			const response = await fetch(url);
+			const response = await fetch(url, { headers });
 			if (!response.ok) {
+				const errorText = await response.text();
+				console.error(`TMDB API error (${response.status}):`, errorText);
 				throw new Error(`TMDB API error: ${response.statusText}`);
 			}
 
@@ -56,11 +76,31 @@ export class TMDBPlugin implements EnrichmentPlugin {
 		}
 
 		const endpoint = category === 'movie' ? `/movie/${id}` : `/tv/${id}`;
-		const url = `${this.baseUrl}${endpoint}?api_key=${this.apiKey}&append_to_response=external_ids`;
+
+		// Check if this is a v4 JWT token or v3 API key
+		const isV4Token = this.apiKey.startsWith('eyJ');
+
+		let url: string;
+		let headers: HeadersInit;
+
+		if (isV4Token) {
+			// TMDB API v4 with Bearer token
+			url = `https://api.themoviedb.org/4${endpoint}?append_to_response=external_ids`;
+			headers = {
+				'Authorization': `Bearer ${this.apiKey}`,
+				'Content-Type': 'application/json'
+			};
+		} else {
+			// TMDB API v3 with API key
+			url = `${this.baseUrl}${endpoint}?api_key=${this.apiKey}&append_to_response=external_ids`;
+			headers = {};
+		}
 
 		try {
-			const response = await fetch(url);
+			const response = await fetch(url, { headers });
 			if (!response.ok) {
+				const errorText = await response.text();
+				console.error(`TMDB API error (${response.status}):`, errorText);
 				throw new Error(`TMDB API error: ${response.statusText}`);
 			}
 
