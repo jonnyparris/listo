@@ -1,38 +1,184 @@
-# sv
+# Listo
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+**A minimalist, mobile-first recommendation capture app built with SvelteKit and Cloudflare.**
 
-## Creating a project
+> *intentional chill*
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```sh
-# create a new project in the current directory
-npx sv create
+- **Simple & Secure**: Passkey login (stubbed for now, ready for WebAuthn)
+- **Category-Aware**: Movies, Shows, YouTube, Podcasts, Music, Books, Restaurants, and more
+- **Smart Autocomplete**: External API integration (TMDB proof-of-concept included)
+- **Local-First**: IndexedDB storage with offline support via Dexie.js
+- **Auto-Sync**: Last-write-wins conflict resolution with D1
+- **Beautiful Design**: Lazy Days aesthetic with calm pastels and thoughtful spacing
 
-# create a new project in my-app
-npx sv create my-app
+## Tech Stack
+
+- **Frontend**: SvelteKit 2 + TypeScript + Tailwind CSS
+- **Backend**: Cloudflare Pages + D1 + KV
+- **Storage**: IndexedDB (Dexie.js) + D1 (SQLite)
+- **APIs**: TMDB (movies/shows), with plugin architecture for others
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+
+- npm or pnpm
+- Cloudflare account (for deployment)
+
+### Setup
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Create a D1 database**:
+   ```bash
+   npx wrangler d1 create listo-db
+   ```
+
+   Copy the `database_id` from the output and update `wrangler.toml`:
+   ```toml
+   [[d1_databases]]
+   binding = "DB"
+   database_name = "listo-db"
+   database_id = "YOUR_DATABASE_ID_HERE"
+   ```
+
+3. **Initialize the database schema**:
+   ```bash
+   npx wrangler d1 execute listo-db --local --file=./schema.sql
+   npx wrangler d1 execute listo-db --remote --file=./schema.sql
+   ```
+
+4. **Set up API keys** (optional):
+
+   For TMDB integration (movies/shows autocomplete):
+   - Get an API key from [TMDB](https://www.themoviedb.org/settings/api)
+   - Update `wrangler.toml`:
+     ```toml
+     [vars]
+     TMDB_API_KEY = "your_tmdb_api_key_here"
+     ```
+
+5. **Start development server**:
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Deployment
+
+### Deploy to Cloudflare Pages
+
+1. **Build the project**:
+   ```bash
+   npm run build
+   ```
+
+2. **Deploy via Wrangler**:
+   ```bash
+   npx wrangler pages deploy .svelte-kit/cloudflare
+   ```
+
+   Or connect to GitHub and let Cloudflare Pages auto-deploy:
+
+   - Push your code to GitHub
+   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
+   - Navigate to **Workers & Pages** → **Create application** → **Pages**
+   - Connect your GitHub repository
+   - Build settings:
+     - **Build command**: `npm run build`
+     - **Build output directory**: `.svelte-kit/cloudflare`
+   - Add environment variables:
+     - `TMDB_API_KEY` (if using TMDB integration)
+   - Deploy!
+
+### Set up D1 Binding in Production
+
+In Cloudflare Dashboard, add the D1 database binding to your Pages project:
+- Go to **Settings** → **Functions** → **D1 database bindings**
+- Add binding:
+  - **Variable name**: `DB`
+  - **D1 database**: Select `listo-db`
+
+## Project Structure
+
+```
+listo/
+├── src/
+│   ├── lib/
+│   │   ├── components/ui/    # Reusable UI components
+│   │   ├── db/               # Dexie.js local database
+│   │   ├── services/
+│   │   │   ├── enrichment/   # API integration plugins
+│   │   │   └── sync.ts       # Sync service
+│   │   ├── server/
+│   │   │   └── auth.ts       # Authentication (stubbed)
+│   │   └── types/            # TypeScript types
+│   ├── routes/
+│   │   └── +page.svelte      # Homepage
+│   ├── app.css               # Global styles
+│   └── hooks.server.ts       # Server hooks
+├── schema.sql                # D1 database schema
+├── wrangler.toml             # Cloudflare configuration
+└── tailwind.config.js        # Tailwind configuration
 ```
 
-## Developing
+## TODOs
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### High Priority
+- [ ] Implement WebAuthn passkey authentication
+- [ ] Add API endpoints for D1 sync (`/api/recommendations/sync`)
+- [ ] Implement search/filter UI
+- [ ] Add autocomplete with TMDB integration
+- [ ] Build detail view for recommendations
+- [ ] Add delete/edit functionality
 
-```sh
-npm run dev
+### Medium Priority
+- [ ] Implement additional enrichment plugins:
+  - [ ] YouTube Data API
+  - [ ] Spotify API
+  - [ ] Google Books API
+  - [ ] Google Places API (restaurants)
+- [ ] Add dark mode toggle
+- [ ] Implement sharing functionality
+- [ ] Add export feature (JSON, CSV)
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+### Low Priority
+- [ ] Unit tests (Vitest)
+- [ ] E2E tests
+- [ ] CI/CD pipeline
+- [ ] Performance monitoring
+- [ ] Analytics (privacy-focused)
 
-## Building
+## Design System
 
-To create a production version of your app:
+### Colors (Lazy Days Palette)
+- **Primary**: `#BFE3D0` (seafoam)
+- **Secondary**: `#F2C6A0` (peach)
+- **Background Light**: `#FDFBF7`
+- **Background Dark**: `#2C2C2B`
 
-```sh
-npm run build
-```
+### Fonts
+- **Primary**: Inter (Sans)
+- **Accent**: Fraunces (Serif)
 
-You can preview the production build with `npm run preview`.
+### Principles
+- Mobile-first responsive design
+- Generous spacing (16-24px grid)
+- Rounded corners (2xl = 16-20px)
+- Soft shadows, never harsh
+- Smooth transitions (200-300ms)
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Contributing
+
+This is a personal project, but feel free to fork and adapt it for your own use!
+
+## License
+
+MIT
