@@ -132,8 +132,19 @@ export async function verifyAuthentication(
  * Helper to encode/decode base64url
  */
 export const base64url = {
-	encode(buffer: Uint8Array): string {
-		const base64 = btoa(String.fromCharCode(...buffer));
+	encode(buffer: Uint8Array | ArrayBuffer): string {
+		// Convert ArrayBuffer to Uint8Array if needed
+		const uint8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+
+		// Convert to binary string
+		let binary = '';
+		const len = uint8Array.byteLength;
+		for (let i = 0; i < len; i++) {
+			binary += String.fromCharCode(uint8Array[i]);
+		}
+
+		// Encode to base64 and convert to base64url
+		const base64 = btoa(binary);
 		return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 	},
 	decode(base64url: string): Uint8Array {
