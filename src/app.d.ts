@@ -16,7 +16,11 @@ declare global {
 		interface Platform {
 			env: {
 				DB: D1Database;
+				AI: any; // Cloudflare Workers AI
 				TMDB_API_KEY?: string;
+				YOUTUBE_API_KEY?: string;
+				SPOTIFY_CLIENT_ID?: string;
+				SPOTIFY_CLIENT_SECRET?: string;
 			};
 			context: {
 				waitUntil(promise: Promise<any>): void;

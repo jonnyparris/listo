@@ -9,6 +9,10 @@ binding = "DB"
 database_name = "listo-db"
 database_id = "413953c7-19b7-4b63-9e97-ab2973bb08d6"
 
+# Workers AI binding
+[ai]
+binding = "AI"
+
 # Environment variables (development)
 [vars]
 TMDB_API_KEY = "" # Add your TMDB API key for local dev
@@ -25,6 +29,10 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "listo-db"
 database_id = "413953c7-19b7-4b63-9e97-ab2973bb08d6"
+
+# Workers AI binding for production
+[env.production.ai]
+binding = "AI"
 
 # Production environment variables (set via dashboard or wrangler secret)
 [env.production.vars]
