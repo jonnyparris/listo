@@ -46,6 +46,9 @@
 	// Keyboard shortcuts help
 	let showKeyboardHelp = $state(false);
 
+	// Settings menu
+	let showSettingsMenu = $state(false);
+
 	// Sync state
 	let syncing = $state(false);
 	let lastSyncError = $state<string | null>(null);
@@ -190,8 +193,19 @@
 
 		window.addEventListener('keydown', handleKeydown);
 
+		// Close settings menu when clicking outside
+		const handleClickOutside = (e: MouseEvent) => {
+			const target = e.target as HTMLElement;
+			if (showSettingsMenu && !target.closest('.relative')) {
+				showSettingsMenu = false;
+			}
+		};
+
+		window.addEventListener('click', handleClickOutside);
+
 		return () => {
 			window.removeEventListener('keydown', handleKeydown);
+			window.removeEventListener('click', handleClickOutside);
 		};
 	});
 
@@ -467,11 +481,49 @@
 
 		return text;
 	}
+
+	function handlePurgeAll() {
+		const totalCount = recommendations.length + completedRecs.length;
+
+		if (totalCount === 0) {
+			toastStore.error('No recommendations to delete');
+			return;
+		}
+
+		confirmModal = {
+			show: true,
+			title: 'Purge All Recommendations?',
+			message: `This will permanently delete all ${totalCount} recommendations (${recommendations.length} active, ${completedRecs.length} completed). This action cannot be undone. Are you absolutely sure?`,
+			onConfirm: async () => {
+				// Second confirmation
+				confirmModal = {
+					show: true,
+					title: 'Final Confirmation',
+					message: 'This is your last chance. Do you really want to delete everything?',
+					onConfirm: async () => {
+						try {
+							// Delete all recommendations from IndexedDB
+							for (const rec of [...recommendations, ...completedRecs]) {
+								await dbOperations.deleteRecommendation(rec.id);
+							}
+							await loadRecommendations();
+							confirmModal = null;
+							toastStore.success('All recommendations deleted');
+						} catch (error) {
+							console.error('Failed to purge recommendations:', error);
+							toastStore.error('Failed to delete recommendations');
+							confirmModal = null;
+						}
+					}
+				};
+			}
+		};
+	}
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
 	<div class="mx-auto max-w-4xl px-4 py-8">
-		<!-- Theme Toggle, Sync, Help, and Auth (top right) -->
+		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
 		<div class="flex justify-end gap-2 mb-4">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
@@ -505,6 +557,47 @@
 					<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
 				</svg>
 			</button>
+
+			<!-- Settings Menu -->
+			<div class="relative">
+				<button
+					onclick={() => (showSettingsMenu = !showSettingsMenu)}
+					class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+					title="Settings"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="3"></circle>
+						<path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
+					</svg>
+				</button>
+
+				{#if showSettingsMenu}
+					<div
+						class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50"
+						onclick={(e) => e.stopPropagation()}
+					>
+						<button
+							onclick={() => {
+								goto('/about');
+								showSettingsMenu = false;
+							}}
+							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+						>
+							About Listo
+						</button>
+						<button
+							onclick={() => {
+								handlePurgeAll();
+								showSettingsMenu = false;
+							}}
+							class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+						>
+							Purge All Data
+						</button>
+					</div>
+				{/if}
+			</div>
+
 			{#if !isAuthenticated}
 				<button
 					onclick={() => goto('/auth')}
