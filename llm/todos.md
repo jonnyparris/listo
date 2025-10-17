@@ -20,17 +20,33 @@ Priority features for future development:
 - [x] WebAuthn passkey authentication
 
 ## Medium Priority
-- [ ] Additional enrichment plugins (YouTube, Spotify, Books, etc.)
+- [x] Additional enrichment plugins (YouTube, Books via Google Books API - no key needed!)
 - [x] Dark mode toggle UI
-- [ ] Share/export functionality
+- [x] Share/export functionality
 - [x] Mobile responsiveness improvements
 - [x] Keyboard shortcuts
 - [x] Full-screen modal for add/edit form
 - [x] Logo and favicon
 - [x] Autofocus title input when opening add form
 
+## Polish & UX Improvements
+- [x] Replace alert() with toast notifications
+- [x] Replace confirm() with custom modal dialogs
+- [x] Add input validation (don't allow empty titles)
+- [ ] Better loading states for autocomplete
+- [ ] Improve empty state messaging
+- [ ] Add smooth transitions/animations (spring easing)
+- [ ] Error boundary for top-level errors
+
 ## Low Priority
 - [ ] Unit tests
 - [ ] E2E tests
-- [ ] Performance optimization
-- [ ] Deployment to production
+- [x] Performance optimization
+- [x] Deployment to production
+- [x] Documentation for API keys setup
+
+# More considerations
+- Users should be able to optionally signup / login in order to save their recommendations for retrieving later or on other devices. That's going to need a whole new flow. You should still be able to use the site without creating an account, you just won't be able to persist your recommendations beyond your session.
+- The category dropdown looks ugly on Safari. Fix.
+- You should be able to, with caution, purge all your saved recommendations
+- Also add an about page describing the purpose of the site and explaining the increasing importance of human-led personal creation instead of soulless algorithms driving our consumption habits.

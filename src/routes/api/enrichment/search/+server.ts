@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createEnrichmentService } from '$lib/services/enrichment';
-import { TMDB_API_KEY } from '$env/static/private';
+import { TMDB_API_KEY, YOUTUBE_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from '$env/static/private';
 
 export const GET: RequestHandler = async ({ url, platform }) => {
 	const query = url.searchParams.get('query');
@@ -12,14 +12,17 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 	}
 
 	// Try platform env first (production), then fallback to SvelteKit env (dev)
-	const apiKey = platform?.env?.TMDB_API_KEY || TMDB_API_KEY || '';
+	const tmdbKey = platform?.env?.TMDB_API_KEY || TMDB_API_KEY || '';
+	const youtubeKey = platform?.env?.YOUTUBE_API_KEY || YOUTUBE_API_KEY || '';
+	const spotifyClientId = platform?.env?.SPOTIFY_CLIENT_ID || SPOTIFY_CLIENT_ID || '';
+	const spotifyClientSecret = platform?.env?.SPOTIFY_CLIENT_SECRET || SPOTIFY_CLIENT_SECRET || '';
 
-	if (!apiKey) {
-		console.warn('TMDB_API_KEY not configured - returning empty results');
-		return json([]);
-	}
-
-	const enrichmentService = createEnrichmentService({ tmdb: apiKey });
+	const enrichmentService = createEnrichmentService({
+		tmdb: tmdbKey,
+		youtube: youtubeKey,
+		spotify_client_id: spotifyClientId,
+		spotify_client_secret: spotifyClientSecret
+	});
 
 	try {
 		const suggestions = await enrichmentService.search(query, category as any);

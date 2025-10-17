@@ -3,9 +3,13 @@
 	import { Button, Input, Card } from '$lib/components/ui';
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import TMDBAutocomplete from '$lib/components/TMDBAutocomplete.svelte';
+	import EnrichmentAutocomplete from '$lib/components/EnrichmentAutocomplete.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import ToastContainer from '$lib/components/ToastContainer.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import { dbOperations } from '$lib/db';
 	import { syncService } from '$lib/services/sync';
+	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { LocalRecommendation, Category } from '$lib/types';
 	import type { SearchSuggestion } from '$lib/services/enrichment/types';
 
@@ -42,6 +46,14 @@
 	// Sync state
 	let syncing = $state(false);
 	let lastSyncError = $state<string | null>(null);
+
+	// Confirm modal state
+	let confirmModal = $state<{
+		show: boolean;
+		title: string;
+		message: string;
+		onConfirm: () => void;
+	} | null>(null);
 
 	const categories: Category[] = [
 		'movie',
@@ -224,7 +236,11 @@
 	}
 
 	async function saveRecommendation() {
-		if (!formTitle.trim()) return;
+		// Validate title
+		if (!formTitle.trim()) {
+			toastStore.error('Please enter a title');
+			return;
+		}
 
 		// Convert metadata to plain object to avoid Proxy serialization issues
 		const plainMetadata = formMetadata ? JSON.parse(JSON.stringify(formMetadata)) : undefined;
@@ -238,6 +254,7 @@
 				metadata: plainMetadata,
 				synced: false
 			});
+			toastStore.success('Recommendation updated');
 		} else {
 			// Create new
 			const recommendation: LocalRecommendation = {
@@ -252,6 +269,7 @@
 				synced: false
 			};
 			await dbOperations.addRecommendation(recommendation);
+			toastStore.success('Recommendation added');
 		}
 
 		await loadRecommendations();
@@ -268,11 +286,18 @@
 		focusTitleInput();
 	}
 
-	async function deleteRecommendation(id: string) {
-		if (confirm('Are you sure you want to delete this recommendation?')) {
-			await dbOperations.deleteRecommendation(id);
-			await loadRecommendations();
-		}
+	function deleteRecommendation(id: string) {
+		confirmModal = {
+			show: true,
+			title: 'Delete Recommendation',
+			message: 'Are you sure you want to delete this recommendation? This action cannot be undone.',
+			onConfirm: async () => {
+				await dbOperations.deleteRecommendation(id);
+				await loadRecommendations();
+				confirmModal = null;
+				toastStore.success('Recommendation deleted');
+			}
+		};
 	}
 
 	function startComplete(rec: LocalRecommendation) {
@@ -340,13 +365,15 @@
 		});
 	}
 
-	function handleTMDBSelect(suggestion: any) {
+	function handleEnrichmentSelect(suggestion: any) {
 		formTitle = suggestion.title;
 		formMetadata = suggestion.metadata;
 
-		// If we have overview, auto-fill description
+		// Auto-fill description if available
 		if (suggestion.metadata?.overview && !formDescription) {
 			formDescription = suggestion.metadata.overview;
+		} else if (suggestion.metadata?.description && !formDescription) {
+			formDescription = suggestion.metadata.description;
 		}
 	}
 
@@ -365,6 +392,66 @@
 		}
 
 		syncing = false;
+	}
+
+	async function shareRecommendation(rec: LocalRecommendation) {
+		const shareText = formatShareText(rec);
+
+		// Try Web Share API if available
+		if (navigator.share) {
+			try {
+				await navigator.share({
+					title: `Recommendation: ${rec.title}`,
+					text: shareText
+				});
+				toastStore.success('Shared successfully!');
+				return;
+			} catch (error) {
+				// User cancelled - don't show error
+				if (error instanceof Error && error.name === 'AbortError') {
+					return;
+				}
+				// Fall back to clipboard for other errors
+			}
+		}
+
+		// Fallback to clipboard
+		try {
+			await navigator.clipboard.writeText(shareText);
+			toastStore.success('Copied to clipboard!');
+		} catch (error) {
+			console.error('Failed to share:', error);
+			toastStore.error('Failed to copy to clipboard');
+		}
+	}
+
+	function formatShareText(rec: LocalRecommendation): string {
+		let text = `📌 ${rec.title}\n`;
+		text += `Category: ${formatCategory(rec.category)}\n`;
+
+		if (rec.metadata?.year) {
+			text += `Year: ${rec.metadata.year}\n`;
+		}
+
+		if (rec.metadata?.genres && rec.metadata.genres.length > 0) {
+			text += `Genres: ${rec.metadata.genres.join(', ')}\n`;
+		}
+
+		if (rec.rating) {
+			text += `Rating: ${'★'.repeat(rec.rating)}${'☆'.repeat(5 - rec.rating)}\n`;
+		}
+
+		if (rec.description) {
+			text += `\n${rec.description}\n`;
+		}
+
+		if (rec.review) {
+			text += `\nReview: ${rec.review}\n`;
+		}
+
+		text += `\nShared from Listo`;
+
+		return text;
 	}
 </script>
 
@@ -531,8 +618,15 @@
 											<TMDBAutocomplete
 												bind:value={formTitle}
 												category={formCategory}
-												onSelect={handleTMDBSelect}
+												onSelect={handleEnrichmentSelect}
 												placeholder={`Search for a ${formCategory}...`}
+											/>
+										{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube'}
+											<EnrichmentAutocomplete
+												bind:value={formTitle}
+												category={formCategory}
+												onSelect={handleEnrichmentSelect}
+												placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
 											/>
 										{:else}
 											<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
@@ -663,6 +757,8 @@
 											src={rec.metadata.poster_url}
 											alt={rec.title}
 											class="h-32 w-24 rounded object-cover flex-shrink-0"
+											loading="lazy"
+											decoding="async"
 										/>
 									{/if}
 									<div class="flex-1 min-w-0">
@@ -710,6 +806,19 @@
 											✓
 										</button>
 										<button
+											onclick={() => shareRecommendation(rec)}
+											class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											title="Share"
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<circle cx="18" cy="5" r="3"></circle>
+												<circle cx="6" cy="12" r="3"></circle>
+												<circle cx="18" cy="19" r="3"></circle>
+												<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+												<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+											</svg>
+										</button>
+										<button
 											onclick={() => startEdit(rec)}
 											class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 											title="Edit"
@@ -750,6 +859,8 @@
 										src={rec.metadata.poster_url}
 										alt={rec.title}
 										class="h-32 w-24 rounded object-cover flex-shrink-0"
+										loading="lazy"
+										decoding="async"
 									/>
 								{/if}
 								<div class="flex-1 min-w-0">
@@ -796,6 +907,19 @@
 								</div>
 
 								<div class="flex gap-2 flex-shrink-0">
+									<button
+										onclick={() => shareRecommendation(rec)}
+										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										title="Share"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<circle cx="18" cy="5" r="3"></circle>
+											<circle cx="6" cy="12" r="3"></circle>
+											<circle cx="18" cy="19" r="3"></circle>
+											<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+											<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+										</svg>
+									</button>
 									<button
 										onclick={() => uncompleteRecommendation(rec.id)}
 										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -919,4 +1043,20 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Toast Notifications -->
+	<ToastContainer />
+
+	<!-- Confirm Modal -->
+	{#if confirmModal}
+		<ConfirmModal
+			title={confirmModal.title}
+			message={confirmModal.message}
+			confirmLabel="Delete"
+			cancelLabel="Cancel"
+			variant="danger"
+			onConfirm={confirmModal.onConfirm}
+			onCancel={() => (confirmModal = null)}
+		/>
+	{/if}
 </div>

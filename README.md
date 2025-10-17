@@ -1,22 +1,36 @@
-# Listo
+# Listo - Intentional Chill
 
-**A minimalist, mobile-first recommendation capture app built with SvelteKit and Cloudflare.**
+**A minimalist, mobile-first recommendation tracker built with SvelteKit and deployed on Cloudflare's developer platform.**
 
 > *intentional chill*
 
 ## Features
 
-### ✅ Implemented
-- **Simple & Secure**: Passkey login (stubbed for now, ready for WebAuthn)
-- **Category-Aware**: Movies, Shows, YouTube, Podcasts, Music, Books, Restaurants, and more
-- **Smart Autocomplete**: TMDB integration for movies/shows with thumbnails and metadata
-- **Search & Filter**: Real-time search across titles, descriptions, and tags with category filtering
-- **Local-First**: IndexedDB storage with offline support via Dexie.js
-- **D1 Sync API**: Backend endpoints for last-write-wins conflict resolution
-- **Dark Mode**: Toggle between light and dark themes with localStorage persistence
-- **CRUD Operations**: Add, edit, delete, complete, and uncomplete recommendations
-- **Rating & Reviews**: 5-star rating system with review text for completed items
-- **Beautiful Design**: Lazy Days aesthetic with calm pastels and thoughtful spacing
+### Core Functionality ✅
+- 📝 **Quick Capture** - Add recommendations across 16 categories
+- 🔍 **Smart Search** - Filter by category, keyword, or genre
+- ✅ **Completion Tracking** - Mark items as completed with ratings and reviews
+- 🎨 **Dark Mode** - Beautiful light and dark themes
+- 📱 **Mobile First** - Optimized for phones with full desktop support
+- ⌨️ **Keyboard Shortcuts** - Navigate without touching the mouse
+
+### Smart Enrichment ✨
+Automatic metadata enrichment with:
+- **TMDB** for movies and TV shows (posters, descriptions, genres, ratings)
+- **YouTube API** for video information (thumbnails, durations, view counts)
+- **Google Books** for book metadata (no API key required!)
+
+### Local-First Architecture 💾
+- **IndexedDB Storage** - Works offline, syncs when online
+- **Cloud Sync** - Optional backup to Cloudflare D1
+- **Instant Updates** - No waiting for server responses
+
+### UX Polish ✨
+- 🎯 **Toast Notifications** - Clear feedback on all actions
+- 🎭 **Custom Modals** - Smooth confirmation dialogs
+- 📤 **Native Sharing** - Share recommendations via Web Share API
+- ✏️ **Input Validation** - Prevents empty or invalid entries
+- 🎬 **Smooth Animations** - Polished transitions throughout
 
 ## Tech Stack
 
@@ -62,22 +76,13 @@
    npx wrangler d1 execute listo-db --remote --file=./schema.sql
    ```
 
-4. **Set up API keys** (optional):
+4. **Set up API keys** (optional - app works great without them!):
 
-   For TMDB integration (movies/shows autocomplete):
-   - Get an API key from [TMDB](https://www.themoviedb.org/settings/api)
-   - Copy `.env.example` to `.env`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Add your API key to `.env`:
-     ```bash
-     TMDB_API_KEY=your_tmdb_api_key_here
-     ```
-   - For production, also update `wrangler.toml` or use Cloudflare secrets:
-     ```bash
-     npx wrangler secret put TMDB_API_KEY
-     ```
+   See [API_KEYS_SETUP.md](./API_KEYS_SETUP.md) for detailed instructions on:
+   - Getting TMDB API key (movies/shows autocomplete)
+   - Getting YouTube API key (video autocomplete)
+   - Setting up environment variables
+   - Deployment configuration
 
 5. **Start development server**:
    ```bash
@@ -144,30 +149,58 @@ listo/
 └── tailwind.config.js        # Tailwind configuration
 ```
 
-## TODOs
+## Categories Supported
 
-### High Priority
-- [ ] Implement WebAuthn passkey authentication
-- [ ] Implement actual sync service (periodic background sync)
-- [ ] Build detail view for recommendations
-- [ ] Add sharing functionality
-- [ ] Add export feature (JSON, CSV)
+Movies • TV Shows • YouTube Videos • Podcasts • Artists • Songs • Music Genres • Restaurants • Recipes • Cuisines • Activities • Video Games • Board Games • Books • Graphic Novels • Quotes
 
-### Medium Priority
-- [ ] Implement additional enrichment plugins:
-  - [ ] YouTube Data API
-  - [ ] Spotify API
-  - [ ] Google Books API
-  - [ ] Google Places API (restaurants)
-- [ ] Add AI categorization via Cloudflare Workers AI
-- [ ] Implement tagging system
+## Keyboard Shortcuts
 
-### Low Priority
-- [ ] Unit tests (Vitest)
-- [ ] E2E tests
-- [ ] CI/CD pipeline
-- [ ] Performance monitoring
-- [ ] Analytics (privacy-focused)
+Press `?` anywhere in the app to see all available shortcuts:
+
+**General**
+- `?` - Show keyboard shortcuts help
+- `Esc` - Close dialogs/forms
+- `/` - Focus search
+- `T` - Toggle between active and completed
+
+**Recommendations**
+- `N` - New recommendation
+- `↑/↓` - Navigate cards
+- `Enter` - Complete/uncomplete selected
+- `E` - Edit selected
+- `D` - Delete selected
+
+**Forms**
+- `⌘/Ctrl + S` - Save form
+- `⌘/Ctrl + Enter` - Save from textarea
+
+## Roadmap
+
+See [llm/todos.md](./llm/todos.md) for detailed progress tracking.
+
+**Completed** ✅
+- Core CRUD operations with local-first storage
+- Search and filtering by category/keyword/genre
+- Smart autocomplete for movies, shows, books, and YouTube
+- Cloud sync with Cloudflare D1
+- WebAuthn passkey authentication
+- Dark mode with localStorage persistence
+- Keyboard shortcuts for power users
+- Share functionality with Web Share API
+- Toast notifications and custom modals
+- Input validation and error handling
+
+**In Progress** 🚧
+- Performance optimizations
+- Unit and E2E tests
+- Deployment to production
+
+**Future Ideas** 💭
+- Additional enrichment plugins (Spotify, Google Places)
+- AI-powered categorization and tagging
+- Collaborative lists and social features
+- Import/export functionality (JSON, CSV)
+- Browser extension for quick captures
 
 ## Design System
 

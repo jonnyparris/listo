@@ -1,5 +1,6 @@
 name = "listo"
 compatibility_date = "2025-10-11"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
 # D1 Database binding
@@ -8,18 +9,23 @@ binding = "DB"
 database_name = "listo-db"
 database_id = "413953c7-19b7-4b63-9e97-ab2973bb08d6"
 
-# KV Namespace for caching (optional)
-# [[kv_namespaces]]
-# binding = "CACHE"
-# id = "PLACEHOLDER_KV_ID"
-
-# Environment variables
+# Environment variables (development)
 [vars]
-TMDB_API_KEY = "" # Add your TMDB API key
+TMDB_API_KEY = "" # Add your TMDB API key for local dev
+YOUTUBE_API_KEY = "" # Add your YouTube API key for local dev
+SPOTIFY_CLIENT_ID = "" # Add your Spotify Client ID for local dev
+SPOTIFY_CLIENT_SECRET = "" # Add your Spotify Client Secret for local dev
 
 # Production environment
 [env.production]
-vars = { }
+compatibility_flags = ["nodejs_compat"]
 
-# Secrets (use `wrangler secret put` for sensitive values)
-# - TMDB_API_KEY
+# D1 Database binding for production
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "listo-db"
+database_id = "413953c7-19b7-4b63-9e97-ab2973bb08d6"
+
+# Production environment variables (set via dashboard or wrangler secret)
+[env.production.vars]
+# TMDB_API_KEY and YOUTUBE_API_KEY should be set via Cloudflare dashboard

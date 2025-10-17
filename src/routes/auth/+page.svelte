@@ -84,7 +84,7 @@
 				</div>
 			{/if}
 
-			<form on:submit={handleSubmit} class="space-y-6">
+			<form onsubmit={handleSubmit} class="space-y-6">
 				{#if mode === 'register'}
 					<div>
 						<label for="username" class="mb-2 block text-sm font-medium text-text dark:text-white">
