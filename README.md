@@ -20,6 +20,7 @@ Automatic metadata enrichment with:
 - **YouTube API** for video information (thumbnails, durations, view counts)
 - **Spotify** for music (album art, artist info, Spotify links)
 - **Google Books** for book metadata (no API key required!)
+- **AI Category Suggestion** - Cloudflare Workers AI automatically suggests categories from freeform text
 
 ### Local-First Architecture 💾
 - **IndexedDB Storage** - Works offline, syncs when online
@@ -35,14 +36,18 @@ Automatic metadata enrichment with:
 - ✏️ **Input Validation** - Prevents empty or invalid entries
 - 🎬 **Smooth Animations** - Polished transitions throughout
 - 🗑️ **Data Control** - Purge all data with double-confirmation safety
+- 📥 **Import/Export** - Backup and restore your recommendations as JSON
 - ℹ️ **About Page** - Learn about intentional chill philosophy
+- 🤖 **AI-Powered** - Smart category suggestions using Cloudflare Workers AI
 
 ## Tech Stack
 
 - **Frontend**: SvelteKit 2 + TypeScript + Tailwind CSS
-- **Backend**: Cloudflare Pages + D1 + KV
+- **Backend**: Cloudflare Pages + D1 + Workers AI
 - **Storage**: IndexedDB (Dexie.js) + D1 (SQLite)
-- **APIs**: TMDB (movies/shows), with plugin architecture for others
+- **Authentication**: WebAuthn (Passkeys) via SimpleWebAuthn
+- **APIs**: TMDB (movies/shows), YouTube, Spotify, Google Books
+- **AI**: Cloudflare Workers AI (Llama 3.1 8B for category classification)
 
 ## Development
 
@@ -196,6 +201,8 @@ See [llm/todos.md](./llm/todos.md) for detailed progress tracking.
 - Toast notifications and custom modals
 - Input validation and error handling
 - Purge all data feature with double-confirmation
+- Import/export functionality (JSON)
+- AI-powered category suggestions using Cloudflare Workers AI
 - About page explaining intentional chill philosophy
 - Safari compatibility improvements
 - Performance optimizations
@@ -203,10 +210,10 @@ See [llm/todos.md](./llm/todos.md) for detailed progress tracking.
 **Future Ideas** 💭
 - Unit and E2E tests
 - Additional enrichment plugins (Google Places for restaurants)
-- AI-powered categorization and tagging
 - Collaborative lists and social features
-- Import/export functionality (JSON, CSV)
+- CSV export option
 - Browser extension for quick captures
+- Bulk editing and batch operations
 
 ## Design System
 

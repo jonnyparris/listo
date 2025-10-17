@@ -52,15 +52,15 @@ Priority features for future development:
 - [x] Also add an about page describing the purpose of the site and explaining the increasing importance of human-led personal creation instead of soulless algorithms driving our consumption habits.
 - [x] Add Spotify integration for music autocomplete (artists, songs, genres)
 
-# More Feedback
-- [] the header logo svg has a fixed white background that doesn't make it very responsive to dark mode. Fix please.
-- [] the header logo should link back to the home page
-- [] the setting icon is weird. Use a cog
-- [] why is the signin buttons so pale?
-- [] when i click signin I get "D1_ERROR: no such table: credentials: SQLITE_ERROR"
-- [] when i click create account I get "The RP ID "localhost" is invalid for this domain"
-- [] "Add you first one!" should be clickable to actually create a first recommendation
-- [] Use ollama4 with Cloudflare Workers AI to auto suggest the category from freeform text input.
-- [] Add mass import and export functionality
-- [] deploy, visit the site with browser rendering and suggest improvements
-- [] update the readme with latest details, cleanup anything inaccurate
+# More Feedback (Completed!)
+- [x] the header logo svg has a fixed white background that doesn't make it very responsive to dark mode. Fix please.
+- [x] the header logo should link back to the home page
+- [x] the setting icon is weird. Use a cog
+- [x] why is the signin buttons so pale?
+- [x] when i click signin I get "D1_ERROR: no such table: credentials: SQLITE_ERROR"
+- [x] when i click create account I get "The RP ID "localhost" is invalid for this domain"
+- [x] "Add you first one!" should be clickable to actually create a first recommendation
+- [x] Use ollama4 with Cloudflare Workers AI to auto suggest the category from freeform text input.
+- [x] Add mass import and export functionality
+- [x] deploy, visit the site with browser rendering and suggest improvements
+- [x] update the readme with latest details, cleanup anything inaccurate
