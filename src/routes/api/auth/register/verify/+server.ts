@@ -34,6 +34,8 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const username = userData.username && userData.username.trim() ? userData.username.trim() : null;
 
 		// Create user in database
+		console.log('Creating user with:', { id: userData.id, username, type: typeof username });
+
 		await platform.env.DB.prepare(
 			'INSERT INTO users (id, username, created_at, updated_at) VALUES (?, ?, unixepoch(), unixepoch())'
 		)
@@ -41,15 +43,25 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			.run();
 
 		// Store credential
+		const encodedCredentialID = base64url.encode(credentialID);
+		const encodedPublicKey = base64url.encode(credentialPublicKey);
+
+		console.log('Creating credential with:', {
+			credentialID: encodedCredentialID,
+			userId: userData.id,
+			counter,
+			counterType: typeof counter
+		});
+
 		await platform.env.DB.prepare(
 			`INSERT INTO credentials (id, user_id, public_key, counter, created_at)
 			 VALUES (?, ?, ?, ?, unixepoch())`
 		)
 			.bind(
-				base64url.encode(credentialID),
+				encodedCredentialID,
 				userData.id,
-				base64url.encode(credentialPublicKey),
-				counter
+				encodedPublicKey,
+				counter ?? 0  // Ensure counter is never undefined
 			)
 			.run();
 
