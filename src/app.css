@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		color-scheme: light dark;
+	}
+
+	html {
+		@apply bg-background-light dark:bg-background-dark;
+		@apply text-text dark:text-background-light;
+		@apply antialiased;
+	}
+
+	body {
+		@apply font-sans;
+		@apply transition-colors duration-300;
+	}
+}
+
+@layer components {
+	/* Card component */
+	.card {
+		@apply bg-white dark:bg-gray-800;
+		@apply rounded-2xl shadow-soft;
+		@apply p-6;
+		@apply transition-all duration-200;
+	}
+
+	.card:hover {
+		@apply shadow-card;
+	}
+
+	/* Input styles */
+	.input {
+		@apply w-full rounded-xl;
+		@apply bg-background-light dark:bg-gray-800;
+		@apply border border-gray-200 dark:border-gray-700;
+		@apply px-4 py-3;
+		@apply text-text dark:text-white;
+		@apply placeholder:text-text-muted;
+		@apply focus:outline-none focus:ring-2 focus:ring-primary;
+		@apply transition-all duration-200;
+	}
+
+	/* Button styles */
+	.btn {
+		@apply px-6 py-3 rounded-xl;
+		@apply font-medium;
+		@apply transition-all duration-200;
+		@apply focus:outline-none focus:ring-2;
+	}
+
+	.btn-primary {
+		@apply bg-primary hover:bg-primary-dark;
+		@apply text-text;
+		@apply focus:ring-primary;
+	}
+
+	.btn-secondary {
+		@apply bg-secondary hover:bg-secondary-dark;
+		@apply text-text;
+		@apply focus:ring-secondary;
+	}
+}
