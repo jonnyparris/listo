@@ -26,6 +26,7 @@
 	let formTitle = $state('');
 	let formCategory = $state<Category>('movie');
 	let formDescription = $state('');
+	let formMetadata = $state<any>(undefined);
 
 	// Review form state
 	let reviewText = $state('');
@@ -107,6 +108,7 @@
 				title: formTitle.trim(),
 				category: formCategory,
 				description: formDescription.trim() || undefined,
+				metadata: formMetadata,
 				synced: false
 			});
 		} else {
@@ -117,6 +119,7 @@
 				category: formCategory,
 				title: formTitle.trim(),
 				description: formDescription.trim() || undefined,
+				metadata: formMetadata,
 				created_at: Math.floor(Date.now() / 1000),
 				updated_at: Math.floor(Date.now() / 1000),
 				synced: false
@@ -179,6 +182,7 @@
 		formTitle = '';
 		formDescription = '';
 		formCategory = 'movie';
+		formMetadata = undefined;
 		showAddForm = false;
 		editingId = null;
 	}
@@ -198,9 +202,14 @@
 		});
 	}
 
-	function handleTMDBSelect(suggestion: SearchSuggestion) {
+	function handleTMDBSelect(suggestion: any) {
 		formTitle = suggestion.title;
-		// TODO: Store metadata from suggestion
+		formMetadata = suggestion.metadata;
+
+		// If we have overview, auto-fill description
+		if (suggestion.metadata?.overview && !formDescription) {
+			formDescription = suggestion.metadata.overview;
+		}
 	}
 </script>
 
@@ -395,12 +404,24 @@
 								</div>
 							{:else}
 								<!-- Normal View -->
-								<div class="flex items-start justify-between">
-									<div class="flex-1">
-										<div class="mb-1 flex items-center gap-2">
+								<div class="flex items-start gap-4">
+									{#if rec.metadata?.poster_url}
+										<img
+											src={rec.metadata.poster_url}
+											alt={rec.title}
+											class="h-32 w-24 rounded object-cover flex-shrink-0"
+										/>
+									{/if}
+									<div class="flex-1 min-w-0">
+										<div class="mb-1 flex items-center gap-2 flex-wrap">
 											<span class="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-text">
 												{formatCategory(rec.category)}
 											</span>
+											{#if rec.metadata?.year}
+												<span class="text-xs text-text-muted">
+													{rec.metadata.year}
+												</span>
+											{/if}
 											{#if !rec.synced}
 												<span
 													class="rounded-full bg-secondary/20 px-2 py-1 text-xs text-text-muted"
@@ -413,12 +434,21 @@
 										<h3 class="mb-1 text-lg font-semibold text-text dark:text-white">
 											{rec.title}
 										</h3>
+										{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
+											<div class="mb-2 flex gap-1 flex-wrap">
+												{#each rec.metadata.genres.slice(0, 3) as genre}
+													<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+														{genre}
+													</span>
+												{/each}
+											</div>
+										{/if}
 										{#if rec.description}
-											<p class="text-sm text-text-muted">{rec.description}</p>
+											<p class="text-sm text-text-muted line-clamp-3">{rec.description}</p>
 										{/if}
 									</div>
 
-									<div class="ml-4 flex gap-2">
+									<div class="flex gap-2 flex-shrink-0">
 										<button
 											onclick={() => startComplete(rec)}
 											class="rounded-lg px-3 py-1 text-sm text-primary hover:bg-primary/10 transition-colors"
@@ -461,15 +491,27 @@
 				{:else}
 					{#each filteredCompletedRecs as rec (rec.id)}
 						<Card>
-							<div class="flex items-start justify-between">
-								<div class="flex-1">
-									<div class="mb-1 flex items-center gap-2">
+							<div class="flex items-start gap-4">
+								{#if rec.metadata?.poster_url}
+									<img
+										src={rec.metadata.poster_url}
+										alt={rec.title}
+										class="h-32 w-24 rounded object-cover flex-shrink-0"
+									/>
+								{/if}
+								<div class="flex-1 min-w-0">
+									<div class="mb-1 flex items-center gap-2 flex-wrap">
 										<span class="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-text">
 											{formatCategory(rec.category)}
 										</span>
+										{#if rec.metadata?.year}
+											<span class="text-xs text-text-muted">
+												{rec.metadata.year}
+											</span>
+										{/if}
 										{#if rec.completed_at}
 											<span class="text-xs text-text-muted">
-												Completed {formatDate(rec.completed_at)}
+												· Completed {formatDate(rec.completed_at)}
 											</span>
 										{/if}
 									</div>
@@ -483,15 +525,24 @@
 											{/each}
 										</div>
 									{/if}
+									{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
+										<div class="mb-2 flex gap-1 flex-wrap">
+											{#each rec.metadata.genres.slice(0, 3) as genre}
+												<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+													{genre}
+												</span>
+											{/each}
+										</div>
+									{/if}
 									{#if rec.review}
-										<p class="text-sm italic text-text-muted">"{rec.review}"</p>
+										<p class="text-sm italic text-text-muted mb-2">"{rec.review}"</p>
 									{/if}
 									{#if rec.description}
-										<p class="mt-2 text-sm text-text-muted">{rec.description}</p>
+										<p class="text-sm text-text-muted line-clamp-3">{rec.description}</p>
 									{/if}
 								</div>
 
-								<div class="ml-4 flex gap-2">
+								<div class="flex gap-2 flex-shrink-0">
 									<button
 										onclick={() => uncompleteRecommendation(rec.id)}
 										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

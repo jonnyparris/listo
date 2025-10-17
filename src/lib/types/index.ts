@@ -48,6 +48,7 @@ export interface MovieMetadata {
 	streaming_links?: string[];
 	year?: number;
 	genres?: string[];
+	overview?: string;
 }
 
 export interface ShowMetadata {
@@ -59,6 +60,7 @@ export interface ShowMetadata {
 	streaming_links?: string[];
 	year?: number;
 	genres?: string[];
+	overview?: string;
 }
 
 export interface YouTubeMetadata {

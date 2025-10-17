@@ -113,7 +113,8 @@ export class TMDBPlugin implements EnrichmentPlugin {
 					poster_url: data.poster_path ? `${this.imageBaseUrl}${data.poster_path}` : undefined,
 					imdb_rating: data.vote_average,
 					year: data.release_date ? new Date(data.release_date).getFullYear() : undefined,
-					genres: data.genres?.map((g: any) => g.name)
+					genres: data.genres?.map((g: any) => g.name),
+					overview: data.overview
 				};
 
 				return {
@@ -127,7 +128,8 @@ export class TMDBPlugin implements EnrichmentPlugin {
 					poster_url: data.poster_path ? `${this.imageBaseUrl}${data.poster_path}` : undefined,
 					imdb_rating: data.vote_average,
 					year: data.first_air_date ? new Date(data.first_air_date).getFullYear() : undefined,
-					genres: data.genres?.map((g: any) => g.name)
+					genres: data.genres?.map((g: any) => g.name),
+					overview: data.overview
 				};
 
 				return {

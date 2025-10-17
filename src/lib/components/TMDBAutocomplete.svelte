@@ -60,10 +60,27 @@
 		}
 	}
 
-	function selectSuggestion(suggestion: SearchSuggestion) {
+	async function selectSuggestion(suggestion: SearchSuggestion) {
 		value = suggestion.title;
 		showSuggestions = false;
-		onSelect?.(suggestion);
+
+		// Fetch full metadata for the selected item
+		try {
+			const response = await fetch(
+				`/api/enrichment/enrich?id=${suggestion.id}&category=${category}`
+			);
+			if (response.ok) {
+				const enrichedData = await response.json();
+				// Pass the enriched suggestion with full metadata
+				onSelect?.({ ...suggestion, metadata: enrichedData });
+			} else {
+				// Fallback to basic suggestion
+				onSelect?.(suggestion);
+			}
+		} catch (error) {
+			console.error('Failed to fetch enrichment data:', error);
+			onSelect?.(suggestion);
+		}
 	}
 
 	function handleBlur() {
