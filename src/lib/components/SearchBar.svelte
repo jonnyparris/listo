@@ -71,14 +71,23 @@
 		/>
 	</div>
 	{#if showCategoryFilter}
-		<select
-			value={selectedCategory}
-			onchange={handleCategoryChange}
-			class="rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-		>
-			{#each categories as cat}
-				<option value={cat}>{formatCategory(cat)}</option>
-			{/each}
-		</select>
+		<div class="relative">
+			<select
+				value={selectedCategory}
+				onchange={handleCategoryChange}
+				class="appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 pr-10 text-text dark:text-white focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-w-[180px]"
+				style="-webkit-appearance: none; -moz-appearance: none;"
+			>
+				{#each categories as cat}
+					<option value={cat}>{formatCategory(cat)}</option>
+				{/each}
+			</select>
+			<!-- Custom dropdown arrow -->
+			<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polyline points="6 9 12 15 18 9"></polyline>
+				</svg>
+			</div>
+		</div>
 	{/if}
 </div>
