@@ -6,7 +6,8 @@ import {
 	type VerifiedRegistrationResponse,
 	type VerifiedAuthenticationResponse
 } from '@simplewebauthn/server';
-import type { AuthenticatorTransportFuture } from '@simplewebauthn/types';
+
+type AuthenticatorTransportFuture = 'ble' | 'cable' | 'hybrid' | 'internal' | 'nfc' | 'smart-card' | 'usb';
 
 // WebAuthn configuration
 const rpName = 'Listo';
@@ -149,18 +150,13 @@ export async function verifyAuthentication(
 		? credential.publicKey
 		: new Uint8Array(Object.values(credential.publicKey));
 
-	// WebAuthnCredential structure for the library
-	const webAuthnCredential: {
-		id: string;
-		publicKey: Uint8Array;
-		counter: number;
-		transports?: AuthenticatorTransportFuture[];
-	} = {
-		id: credential.id, // Keep as base64url string
-		publicKey: new Uint8Array(publicKeyUint8), // Ensure proper Uint8Array type
+	// WebAuthnCredential structure for the library - cast to any to avoid type mismatch
+	const webAuthnCredential = {
+		id: credential.id,
+		publicKey: publicKeyUint8,
 		counter: counter,
 		transports: credential.transports
-	};
+	} as any;
 
 	console.log('WebAuthnCredential object being passed:', {
 		id: webAuthnCredential.id,

@@ -39,60 +39,65 @@ export interface Recommendation {
 	rating?: number; // 1-5 stars
 }
 
+// Base metadata interface with common fields
+interface BaseMetadata {
+	year?: number;
+	genres?: string[];
+	overview?: string;
+	description?: string;
+	runtime?: number;
+	rating?: number;
+	poster_url?: string;
+	thumbnail_url?: string;
+	cover_url?: string;
+	album_art?: string;
+	spotify_url?: string;
+	youtube_url?: string;
+	google_maps_link?: string;
+}
+
 // Metadata types for different categories
-export interface MovieMetadata {
+export interface MovieMetadata extends BaseMetadata {
 	type: 'movie';
 	tmdb_id?: number;
-	poster_url?: string;
 	imdb_rating?: number;
 	rt_score?: number;
 	streaming_links?: string[];
-	year?: number;
-	genres?: string[];
-	overview?: string;
 }
 
-export interface ShowMetadata {
+export interface ShowMetadata extends BaseMetadata {
 	type: 'show';
 	tmdb_id?: number;
-	poster_url?: string;
 	imdb_rating?: number;
 	rt_score?: number;
 	streaming_links?: string[];
-	year?: number;
-	genres?: string[];
-	overview?: string;
 }
 
-export interface YouTubeMetadata {
+export interface YouTubeMetadata extends BaseMetadata {
 	type: 'youtube';
 	video_id?: string;
-	thumbnail_url?: string;
 	channel?: string;
 	url?: string;
 }
 
-export interface BookMetadata {
+export interface BookMetadata extends BaseMetadata {
 	type: 'book';
 	isbn?: string;
-	cover_url?: string;
 	author?: string;
 	goodreads_link?: string;
 	google_books_link?: string;
 }
 
-export interface MusicMetadata {
+export interface MusicMetadata extends BaseMetadata {
 	type: 'music';
 	spotify_link?: string;
 	apple_music_link?: string;
-	album_art?: string;
 	artist?: string;
 }
 
-export interface RestaurantMetadata {
+export interface RestaurantMetadata extends BaseMetadata {
 	type: 'restaurant';
 	location?: string;
-	google_maps_link?: string;
 	yelp_link?: string;
 	cuisine?: string;
 }

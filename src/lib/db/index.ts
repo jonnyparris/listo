@@ -51,7 +51,7 @@ export const dbOperations = {
 		return db.recommendations
 			.where('user_id')
 			.equals(userId)
-			.and((rec) => !rec.deleted_at && rec.completed_at)
+			.and((rec) => !rec.deleted_at && !!rec.completed_at)
 			.reverse()
 			.sortBy('completed_at');
 	},
@@ -72,12 +72,12 @@ export const dbOperations = {
 		return db.recommendations
 			.where('user_id')
 			.equals(userId)
-			.and((rec) => {
+			.and((rec): boolean => {
 				if (rec.deleted_at) return false;
 				const titleMatch = rec.title.toLowerCase().includes(lowerQuery);
 				const descMatch = rec.description?.toLowerCase().includes(lowerQuery);
 				const tagsMatch = rec.tags?.toLowerCase().includes(lowerQuery);
-				return titleMatch || descMatch || tagsMatch;
+				return !!(titleMatch || descMatch || tagsMatch);
 			})
 			.toArray();
 	},
@@ -92,7 +92,11 @@ export const dbOperations = {
 
 	// Get unsynced recommendations
 	async getUnsyncedRecommendations(userId: string) {
-		return db.recommendations.where('[user_id+synced]').equals([userId, false]).toArray();
+		return db.recommendations
+			.where('user_id')
+			.equals(userId)
+			.and((rec) => rec.synced === false)
+			.toArray();
 	},
 
 	// Mark recommendations as synced
