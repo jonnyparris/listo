@@ -43,8 +43,8 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		// Log raw registration info for debugging
 		console.log('Raw registration info:', {
 			credentialID: credentialID,
-			credentialIDType: typeof credentialID,
-			credentialIDLength: credentialID?.length || credentialID?.byteLength,
+		credentialIDType: typeof credentialID,
+		credentialIDLength: credentialID?.length,
 			credentialPublicKeyType: typeof credentialPublicKey,
 			credentialPublicKeyLength: credentialPublicKey?.length || credentialPublicKey?.byteLength,
 			counter: counter,

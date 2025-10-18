@@ -1161,11 +1161,11 @@
 					</button>
 					{#if !categoriesCollapsed}
 						<div class="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-							{#each categoryCounts as { category, active, completed, total }}
-								<button
-									onclick={() => handleCategoryChange(category)}
-									class="text-left p-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-								>
+											{#each categoryCounts as { category, active, completed, total }}
+												<button
+													onclick={() => handleCategoryChange(category as Category)}
+													class="text-left p-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+												>
 									<div class="text-xs font-medium text-text dark:text-white mb-1">
 										{formatCategory(category)}
 									</div>
