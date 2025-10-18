@@ -60,6 +60,10 @@
 
 	// AI state
 	let aiSuggesting = $state(false);
+	
+	// Enrichment state
+	let enrichmentLoading = $state(false);
+	let previousCategory = $state<Category>(formCategory);
 
 	// Category matches state
 	let categoryMatches = $state<{ category: Category; count: number }[]>([]);
@@ -870,6 +874,50 @@
 	$effect(() => {
 		searchSimilarRecommendations(formTitle);
 	});
+	
+	// Watch for category changes and trigger enrichment if title exists
+	$effect(() => {
+		if (formCategory !== previousCategory && formTitle.trim() && !editingId) {
+			// Category changed and we have a title - try to enrich
+			tryEnrichOnCategoryChange();
+		}
+		previousCategory = formCategory;
+	});
+	
+	async function tryEnrichOnCategoryChange() {
+		// Only enrich if the new category supports enrichment
+		const enrichableCategories: Category[] = ['movie', 'show', 'book', 'graphic-novel', 'youtube', 'artist', 'song'];
+		if (!enrichableCategories.includes(formCategory)) {
+			return;
+		}
+		
+		enrichmentLoading = true;
+		try {
+			const response = await fetch('/api/enrichment/search', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query: formTitle, category: formCategory })
+			});
+			
+			if (response.ok) {
+				const { suggestions } = await response.json();
+				if (suggestions && suggestions.length > 0) {
+					// Auto-select the top match if it's a close match
+					const topMatch = suggestions[0];
+					const titleSimilarity = formTitle.toLowerCase() === topMatch.title.toLowerCase();
+					if (titleSimilarity) {
+						handleEnrichmentSelect(topMatch);
+						toastStore.success(`Auto-enriched from ${formatCategory(formCategory)}`);
+					}
+				}
+			}
+		} catch (error) {
+			console.error('Auto-enrichment failed:', error);
+			// Silent fail - don't interrupt user flow
+		} finally {
+			enrichmentLoading = false;
+		}
+	}
 
 	// Scroll selected category into view when form opens or category changes
 	$effect(() => {
