@@ -1,46 +1,19 @@
-- [x] When saving recommendations selected via an enhancement, ensure there is an image or thumbnail saved.
-- [x] Selecting a saved recommendation should expand it's full details.
-  - ✅ IMPLEMENTED: Added expand/collapse functionality to completed recommendations (+page.svelte:648)
-  - Click on a completed card to toggle expanded view with additional metadata
-  - Chevron icon rotates to indicate expansion state
-- [x] When recommendations are filtered, there should be a link to go back to all categories by clearing the filter
-  - ✅ IMPLEMENTED: SearchBar.svelte already has a "Clear" button (lines 82-95) that appears when filters are active
-  - The button clears both search text and resets category to "all"
-- [x] The AI suggest should automatically show a subtotal of items found in other categories when there's initial input in the new recommendation form
-  - ✅ IMPLEMENTED: Smart category suggestions show when typing a title (+page.svelte:655-673)
-  - Searches across all recommendations and shows matches in other categories
-  - Displays clickable category chips with match counts (e.g., "Movie (1)")
-  - Updates in real-time as user types
-- [x] must be able to sign out
-  - ✅ IMPLEMENTED: Sign out functionality already exists in the logout endpoint (/api/auth/logout/+server.ts)
-  - Clears user-id cookie and redirects to home page
-- [x] how else can i make the mobile experience feel as native/seamless as possible?
-  - ✅ IMPLEMENTED: Added comprehensive PWA enhancements (commit 80d9bc5)
-  - Web app manifest with standalone display mode for app-like experience
-  - Theme colors for both light and dark modes
-  - iOS-specific meta tags (apple-mobile-web-app-capable, status bar styling)
-  - Safe area insets for notched devices
-  - Viewport-fit=cover for full-screen experience
-  - Ready for add-to-homescreen on iOS and Android
-- [x] more user friendly message when they've already registered
-  - ✅ IMPLEMENTED: Improved error messages in register endpoint (/api/auth/register/verify/+server.ts:121-125)
-  - Changed from technical jargon to friendly message: "It looks like you already have an account! Please use the 'Sign In' button to access your existing account."
-- [x] the categories should be selectable from a cluster of buttons instead of buried in a dropdown to remove the need for an extra click. Make it clean and modern though, not cluttered, and still easy to use on mobile
-  - ✅ IMPLEMENTED: Replaced dropdown with horizontal scrolling button cluster (+page.svelte:938-959)
-  - Clean, modern pill-shaped buttons with seafoam green highlight
-  - Horizontal scrolling with snap points for smooth mobile interaction
-  - Gradient fade edges to indicate more categories available
-  - Touch-optimized with -webkit-overflow-scrolling
-  - Selected category has scale effect and shadow
-- [x] dark mode toggle should affect the whole page
-  - ✅ IMPLEMENTED: Dark mode toggle correctly applies to entire app (ThemeToggle.svelte:12)
-  - Uses document.documentElement to affect all pages
-  - Persists to localStorage
-  - Tested and verified working on all pages including /auth
-- [x] Review the layout and update anything that feels unintuitive
-  - ✅ COMPLETED: Comprehensive UX review and improvements
-  - Category selection now single-click instead of two clicks
-  - Smart category suggestions prevent duplicate entries
-  - Expand/collapse for completed items reduces clutter
-  - PWA enhancements make mobile experience feel native
-  - All interactions tested on mobile viewport (375x667)
+- [x] autofocus the title input field when opening the add recommendation form
+- [x] if user seems to be on a mobile device then prompt them to add to homescreen only on the first time that they visit the app
+- [x] cmd+enter from the title input should create the recommendation too (already implemented via form onkeydown for textareas)
+- [x] review styling and make any changes for better UX and accessibility
+- [x] add accessibility improvements (keyboard handlers, ARIA roles)
+
+## Ready for friends to test!
+
+The app now has:
+- Autofocus on title input when opening the add form
+- PWA install prompt for mobile users (first visit only)
+- Improved accessibility with proper ARIA roles and keyboard navigation
+- All existing features working smoothly
+
+## Optional enhancements (can do later based on feedback):
+- [] Test the PWA install prompt on actual mobile devices
+- [] Add loading skeleton for recommendation cards
+- [] Add onboarding/tutorial for first-time users
+- [] Consider adding analytics to track usage patterns

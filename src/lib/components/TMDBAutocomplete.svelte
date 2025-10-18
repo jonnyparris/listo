@@ -8,13 +8,15 @@
 		category: Category;
 		onSelect?: (suggestion: SearchSuggestion) => void;
 		placeholder?: string;
+		autofocus?: boolean;
 	}
 
 	let {
 		value = $bindable(''),
 		category,
 		onSelect,
-		placeholder = 'Search for a movie or show...'
+		placeholder = 'Search for a movie or show...',
+		autofocus = false
 	}: Props = $props();
 
 	let suggestions = $state<SearchSuggestion[]>([]);
@@ -107,6 +109,7 @@
 	<Input
 		{value}
 		{placeholder}
+		{autofocus}
 		oninput={handleInput}
 		onblur={handleBlur}
 		onfocus={() => suggestions.length > 0 && (showSuggestions = true)}

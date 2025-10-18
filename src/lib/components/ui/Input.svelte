@@ -4,6 +4,7 @@
 		placeholder?: string;
 		type?: string;
 		disabled?: boolean;
+		autofocus?: boolean;
 		class?: string;
 		oninput?: (event: Event) => void;
 		onblur?: (event: FocusEvent) => void;
@@ -16,6 +17,7 @@
 		placeholder = '',
 		type = 'text',
 		disabled = false,
+		autofocus = false,
 		class: className = '',
 		oninput,
 		onblur,
@@ -33,6 +35,7 @@
 	{type}
 	{placeholder}
 	{disabled}
+	{autofocus}
 	class={classes}
 	{oninput}
 	{onblur}

@@ -8,6 +8,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+	import InstallPrompt from '$lib/components/InstallPrompt.svelte';
 	import { dbOperations } from '$lib/db';
 	import { syncService } from '$lib/services/sync';
 	import { authService } from '$lib/services/auth';
@@ -126,7 +127,6 @@
 			if (e.key === 'n' && !showCompleted && !showAddForm) {
 				e.preventDefault();
 				showAddForm = true;
-				focusTitleInput();
 			}
 
 			// / - Focus search
@@ -311,7 +311,6 @@
 		formDescription = rec.description || '';
 		formMetadata = rec.metadata;
 		showAddForm = true;
-		focusTitleInput();
 	}
 
 	function deleteRecommendation(id: string) {
@@ -367,15 +366,6 @@
 		formMetadata = undefined;
 		showAddForm = false;
 		editingId = null;
-	}
-
-	function focusTitleInput() {
-		setTimeout(() => {
-			const titleInput = document.querySelector('#title') as HTMLInputElement;
-			if (titleInput) {
-				titleInput.focus();
-			}
-		}, 100);
 	}
 
 	function formatCategory(cat: string): string {
@@ -738,8 +728,15 @@
 
 				{#if showSettingsMenu}
 					<div
+						role="menu"
+						tabindex="-1"
 						class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50"
 						onclick={(e) => e.stopPropagation()}
+						onkeydown={(e) => {
+							if (e.key === 'Escape') {
+								showSettingsMenu = false;
+							}
+						}}
 					>
 						<button
 							onclick={() => {
@@ -891,7 +888,6 @@
 			<button
 				onclick={() => {
 					showAddForm = true;
-					focusTitleInput();
 				}}
 				class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-secondary shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center text-white text-2xl z-50"
 				aria-label="Add recommendation"
@@ -937,9 +933,9 @@
 								<div class="space-y-6">
 									<div>
 										<div class="mb-3 flex items-center justify-between">
-											<label class="block text-sm font-medium text-text dark:text-white">
+											<span class="block text-sm font-medium text-text dark:text-white">
 												Category
-											</label>
+											</span>
 											<button
 												type="button"
 												onclick={suggestCategory}
@@ -990,6 +986,7 @@
 												category={formCategory}
 												onSelect={handleEnrichmentSelect}
 												placeholder={`Search for a ${formCategory}...`}
+												autofocus
 											/>
 										{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
 											<EnrichmentAutocomplete
@@ -997,9 +994,10 @@
 												category={formCategory}
 												onSelect={handleEnrichmentSelect}
 												placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
+												autofocus
 											/>
 										{:else}
-											<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
+											<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus />
 										{/if}
 
 										<!-- Category matches subtotal -->
@@ -1081,7 +1079,6 @@
 							<button
 								onclick={() => {
 									showAddForm = true;
-									focusTitleInput();
 								}}
 								class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
 							>
@@ -1302,7 +1299,18 @@
 				{:else}
 					{#each filteredCompletedRecs as rec, index (rec.id)}
 						<Card class="{selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''} cursor-pointer hover:shadow-lg transition-shadow">
-							<div class="flex items-start gap-4" onclick={() => toggleCardExpansion(rec.id)}>
+							<div
+								role="button"
+								tabindex="0"
+								class="flex items-start gap-4"
+								onclick={() => toggleCardExpansion(rec.id)}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										toggleCardExpansion(rec.id);
+									}
+								}}
+							>
 								{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
 									<img
 										src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
@@ -1448,15 +1456,25 @@
 		<!-- Keyboard Shortcuts Help -->
 		{#if showKeyboardHelp}
 			<div
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="keyboard-shortcuts-title"
 				class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
 				onclick={() => (showKeyboardHelp = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Escape') {
+						showKeyboardHelp = false;
+					}
+				}}
 			>
 				<div
+					role="document"
 					class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full p-8 max-h-[80vh] overflow-y-auto"
 					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
 				>
 					<div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-						<h2 class="text-2xl font-semibold text-text dark:text-white">Keyboard Shortcuts</h2>
+						<h2 id="keyboard-shortcuts-title" class="text-2xl font-semibold text-text dark:text-white">Keyboard Shortcuts</h2>
 						<button
 							onclick={() => (showKeyboardHelp = false)}
 							class="text-text-muted hover:text-text dark:hover:text-white transition-colors"
@@ -1562,4 +1580,7 @@
 			onCancel={() => (confirmModal = null)}
 		/>
 	{/if}
+
+	<!-- PWA Install Prompt -->
+	<InstallPrompt />
 </div>
