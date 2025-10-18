@@ -69,6 +69,10 @@
 		onConfirm: () => void;
 	} | null>(null);
 
+	// Migration state
+	let showMigrationPrompt = $state(false);
+	let sessionRecommendations = $state<LocalRecommendation[]>([]);
+
 	const categories: Category[] = [
 		'movie',
 		'show',
@@ -91,10 +95,37 @@
 	onMount(async () => {
 		// Get current user (authenticated or session-only)
 		const user = await authService.getCurrentUser();
+
+		// Check if we have session recommendations before login
+		const hadSessionRecommendations = localStorage.getItem('had_session_recommendations') === 'true';
+		const previousSessionId = localStorage.getItem('previous_session_id');
+
+		// If user just authenticated and had session recommendations, offer to migrate
+		if (user.authenticated && hadSessionRecommendations && previousSessionId && previousSessionId !== user.userId) {
+			// Load recommendations from previous session
+			sessionRecommendations = await dbOperations.getAllRecommendations(previousSessionId);
+			const completedSessionRecs = await dbOperations.getCompletedRecommendations(previousSessionId);
+			sessionRecommendations = [...sessionRecommendations, ...completedSessionRecs];
+
+			if (sessionRecommendations.length > 0) {
+				showMigrationPrompt = true;
+			} else {
+				// Clear flags if no recommendations found
+				localStorage.removeItem('had_session_recommendations');
+				localStorage.removeItem('previous_session_id');
+			}
+		}
+
 		userId = user.userId;
 		isAuthenticated = user.authenticated;
 
 		await loadRecommendations();
+
+		// Track if this session has recommendations (for future migration)
+		if (!user.authenticated && recommendations.length > 0) {
+			localStorage.setItem('had_session_recommendations', 'true');
+			localStorage.setItem('previous_session_id', user.userId);
+		}
 
 		// Global keyboard shortcuts
 		const handleKeydown = (e: KeyboardEvent) => {
@@ -220,6 +251,47 @@
 		recommendations = await dbOperations.getAllRecommendations(userId);
 		completedRecs = await dbOperations.getCompletedRecommendations(userId);
 		applyFilters();
+
+		// Track if session has recommendations
+		if (!isAuthenticated && (recommendations.length > 0 || completedRecs.length > 0)) {
+			localStorage.setItem('had_session_recommendations', 'true');
+			localStorage.setItem('previous_session_id', userId);
+		}
+	}
+
+	async function migrateSessionRecommendations() {
+		try {
+			for (const rec of sessionRecommendations) {
+				// Update user_id to current authenticated user
+				const migratedRec = { ...rec, user_id: userId, synced: false };
+				await dbOperations.addRecommendation(migratedRec);
+			}
+
+			// Clear session data
+			const previousSessionId = localStorage.getItem('previous_session_id');
+			if (previousSessionId) {
+				// Delete old session recommendations
+				for (const rec of sessionRecommendations) {
+					await dbOperations.deleteRecommendation(rec.id);
+				}
+			}
+
+			localStorage.removeItem('had_session_recommendations');
+			localStorage.removeItem('previous_session_id');
+
+			await loadRecommendations();
+			showMigrationPrompt = false;
+			toastStore.success(`Migrated ${sessionRecommendations.length} recommendations to your account`);
+		} catch (error) {
+			console.error('Migration failed:', error);
+			toastStore.error('Failed to migrate recommendations');
+		}
+	}
+
+	function dismissMigrationPrompt() {
+		localStorage.removeItem('had_session_recommendations');
+		localStorage.removeItem('previous_session_id');
+		showMigrationPrompt = false;
 	}
 
 	function applyFilters() {
@@ -749,24 +821,30 @@
 							About Listo
 						</button>
 						<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-						<button
-							onclick={() => {
-								handleExport();
-								showSettingsMenu = false;
-							}}
-							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-						>
-							Export Data
-						</button>
-						<button
-							onclick={() => {
-								handleImport();
-								showSettingsMenu = false;
-							}}
-							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-						>
-							Import Data
-						</button>
+						<div class="px-4 py-2">
+							<div class="text-xs font-semibold text-text dark:text-white mb-1">Data Management</div>
+							<div class="text-xs text-text-muted mb-3">Backup your recommendations or migrate between devices</div>
+							<button
+								onclick={() => {
+									handleExport();
+									showSettingsMenu = false;
+								}}
+								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg mb-1"
+							>
+								Export Data
+								<div class="text-xs text-text-muted mt-0.5">Download all your recommendations as JSON</div>
+							</button>
+							<button
+								onclick={() => {
+									handleImport();
+									showSettingsMenu = false;
+								}}
+								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg"
+							>
+								Import Data
+								<div class="text-xs text-text-muted mt-0.5">Restore from a previous export file</div>
+							</button>
+						</div>
 						<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 						<button
 							onclick={() => {
@@ -1627,6 +1705,36 @@
 
 	<!-- PWA Install Prompt -->
 	<InstallPrompt />
+
+	<!-- Migration Prompt -->
+	{#if showMigrationPrompt}
+		<div
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="migration-title"
+			class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+		>
+			<div
+				role="document"
+				class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6"
+			>
+				<h2 id="migration-title" class="text-xl font-semibold text-text dark:text-white mb-3">
+					Save Your Recommendations?
+				</h2>
+				<p class="text-text-muted mb-6">
+					You have {sessionRecommendations.length} recommendation{sessionRecommendations.length === 1 ? '' : 's'} from before you signed in. Would you like to save {sessionRecommendations.length === 1 ? 'it' : 'them'} to your account?
+				</p>
+				<div class="flex gap-3">
+					<Button onclick={migrateSessionRecommendations} variant="primary" class="flex-1">
+						Save to Account
+					</Button>
+					<Button variant="ghost" onclick={dismissMigrationPrompt}>
+						Discard
+					</Button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Footer -->
 	<footer class="mt-20 pt-8 pb-8 border-t border-gray-200 dark:border-gray-700">
