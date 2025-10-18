@@ -676,8 +676,8 @@
 	});
 </script>
 
-<div class="min-h-screen bg-background-light dark:bg-background-dark pb-20">
-	<div class="mx-auto max-w-4xl px-4 py-8">
+<div class="min-h-screen bg-background-light dark:bg-background-dark">
+	<div class="mx-auto max-w-4xl px-4 py-8 pb-20">
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
 		<div class="flex items-center justify-end gap-2 mb-4">
 			<button
