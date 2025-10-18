@@ -679,7 +679,8 @@
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
 	<div class="mx-auto max-w-4xl px-4 py-8 pb-20">
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
-		<div class="flex items-center justify-end gap-2 mb-4">
+		<div class="sticky top-0 z-40 bg-background-light dark:bg-background-dark py-4 -mt-4 mb-4 sm:static sm:py-0 sm:mt-0">
+			<div class="flex items-center justify-end gap-2">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
 				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center"
@@ -793,7 +794,8 @@
 					<span class="text-xs text-text-muted px-2">Signed In</span>
 				</div>
 			{/if}
-			<ThemeToggle />
+				<ThemeToggle />
+			</div>
 		</div>
 
 		{#if lastSyncError}
@@ -887,10 +889,13 @@
 				onclick={() => {
 					showAddForm = true;
 				}}
-				class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-secondary shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center text-white text-2xl z-50"
+				class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-secondary shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50"
 				aria-label="Add recommendation"
 			>
-				+
+				<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="12" y1="5" x2="12" y2="19"></line>
+					<line x1="5" y1="12" x2="19" y2="12"></line>
+				</svg>
 			</button>
 		{/if}
 
@@ -1156,7 +1161,18 @@
 								</div>
 							{:else}
 								<!-- Normal View -->
-								<div class="flex items-start gap-4">
+								<div
+									role="button"
+									tabindex="0"
+									class="flex items-start gap-4 cursor-pointer"
+									onclick={() => toggleCardExpansion(rec.id)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											toggleCardExpansion(rec.id);
+										}
+									}}
+								>
 									{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
 										<img
 											src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
@@ -1230,24 +1246,50 @@
 											</div>
 										{/if}
 										{#if rec.description}
-											<p class="text-sm text-text-muted line-clamp-3">{rec.description}</p>
+											<p class="text-sm text-text-muted {expandedCardId === rec.id ? '' : 'line-clamp-3'}">
+												{rec.description}
+											</p>
+										{/if}
+										{#if expandedCardId === rec.id && rec.metadata}
+											<!-- Additional metadata shown when expanded -->
+											{#if rec.metadata?.runtime}
+												<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
+											{/if}
+											{#if rec.metadata?.rating}
+												<p class="text-xs text-text-muted mt-1">Rating: {rec.metadata.rating}/10</p>
+											{/if}
+											{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
+												<p class="text-sm text-text-muted mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+													{rec.metadata.overview}
+												</p>
+											{/if}
 										{/if}
 									</div>
 
-									<div class="flex gap-2 flex-shrink-0">
+									<div class="flex gap-1 sm:gap-2 flex-shrink-0 items-start flex-col sm:flex-row">
+										<!-- Expand/Collapse indicator -->
 										<button
-											onclick={() => startComplete(rec)}
-											class="rounded-lg px-3 py-1 text-sm text-primary hover:bg-primary/10 transition-colors"
+											onclick={(e) => { e.stopPropagation(); toggleCardExpansion(rec.id); }}
+											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											title={expandedCardId === rec.id ? "Show less" : "Show more"}
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<polyline points="6 9 12 15 18 9" class="transition-transform {expandedCardId === rec.id ? 'rotate-180' : ''}"></polyline>
+											</svg>
+										</button>
+										<button
+											onclick={(e) => { e.stopPropagation(); startComplete(rec); }}
+											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-primary hover:bg-primary/10 transition-colors"
 											title="Mark as completed"
 										>
 											✓
 										</button>
 										<button
-											onclick={() => shareRecommendation(rec)}
-											class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
+											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 											title="Share"
 										>
-											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 												<circle cx="18" cy="5" r="3"></circle>
 												<circle cx="6" cy="12" r="3"></circle>
 												<circle cx="18" cy="19" r="3"></circle>
@@ -1256,15 +1298,15 @@
 											</svg>
 										</button>
 										<button
-											onclick={() => startEdit(rec)}
-											class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											onclick={(e) => { e.stopPropagation(); startEdit(rec); }}
+											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 											title="Edit"
 										>
 											✎
 										</button>
 										<button
-											onclick={() => deleteRecommendation(rec.id)}
-											class="rounded-lg px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
+											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 											title="Delete"
 										>
 											🗑
@@ -1409,19 +1451,23 @@
 									{/if}
 								</div>
 
-								<div class="flex gap-2 flex-shrink-0 items-start">
+								<div class="flex gap-1 sm:gap-2 flex-shrink-0 items-start flex-col sm:flex-row">
 									<!-- Expand/Collapse indicator -->
-									<div class="text-text-muted mt-1">
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform {expandedCardId === rec.id ? 'rotate-180' : ''}">
-											<polyline points="6 9 12 15 18 9"></polyline>
+									<button
+										onclick={(e) => { e.stopPropagation(); toggleCardExpansion(rec.id); }}
+										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										title={expandedCardId === rec.id ? "Show less" : "Show more"}
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<polyline points="6 9 12 15 18 9" class="transition-transform {expandedCardId === rec.id ? 'rotate-180' : ''}"></polyline>
 										</svg>
-									</div>
+									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
-										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 										title="Share"
 									>
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 											<circle cx="18" cy="5" r="3"></circle>
 											<circle cx="6" cy="12" r="3"></circle>
 											<circle cx="18" cy="19" r="3"></circle>
@@ -1431,14 +1477,14 @@
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); uncompleteRecommendation(rec.id); }}
-										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 										title="Move back to active"
 									>
 										↶
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
-										class="rounded-lg px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+										class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 										title="Delete"
 									>
 										🗑
