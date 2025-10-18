@@ -13,6 +13,9 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"dependencies": {
+		"@fontsource/cormorant-garamond": "^5.2.11",
+		"@fontsource/fraunces": "^5.2.9",
+		"@fontsource/inter": "^5.2.8",
 		"@simplewebauthn/browser": "^13.2.2",
 		"@simplewebauthn/server": "^13.2.2",
 		"dexie": "^4.0.12"

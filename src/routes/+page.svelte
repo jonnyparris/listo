@@ -63,6 +63,9 @@
 
 	// Category matches state
 	let categoryMatches = $state<{ category: Category; count: number }[]>([]);
+	
+	// Category card collapsed state
+	let categoriesCollapsed = $state(false);
 
 	// Confirm modal state
 	let confirmModal = $state<{
@@ -888,7 +891,7 @@
 			<div class="flex items-center justify-end gap-2">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
-				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center"
+				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center"
 				title="Keyboard shortcuts (?)"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -900,7 +903,7 @@
 			<button
 				onclick={handleSync}
 				disabled={syncing || !isAuthenticated}
-				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
 				title={!isAuthenticated ? 'Sign in to sync' : syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
 			>
 				<svg
@@ -923,7 +926,7 @@
 			<div class="relative">
 				<button
 					onclick={() => (showSettingsMenu = !showSettingsMenu)}
-					class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center"
+					class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center"
 					title="Settings"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -936,7 +939,7 @@
 					<div
 						role="menu"
 						tabindex="-1"
-						class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50"
+						class="absolute right-0 mt-2 w-56 bg-white dark:bg-surface-dark rounded-xl shadow-lg border border-black/5 dark:border-white/5 py-2 z-50"
 						onclick={(e) => e.stopPropagation()}
 						onkeydown={(e) => {
 							if (e.key === 'Escape') {
@@ -945,7 +948,7 @@
 						}}
 					>
 						{#if isAuthenticated}
-							<div class="px-4 py-2 text-xs text-text-muted border-b border-gray-200 dark:border-gray-700">
+							<div class="px-4 py-2 text-xs text-text-muted border-b border-black/5 dark:border-white/5">
 								Signed in
 							</div>
 							<button
@@ -953,22 +956,22 @@
 									handleSignOut();
 									showSettingsMenu = false;
 								}}
-								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
 							>
 								Sign Out
 							</button>
-							<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+							<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
 						{/if}
 						<button
 							onclick={() => {
 								goto('/about');
 								showSettingsMenu = false;
 							}}
-							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
 						>
 							About Listo
 						</button>
-						<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+						<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
 						<div class="px-4 py-2">
 							<div class="text-xs font-semibold text-text dark:text-white mb-1">Data Management</div>
 							<div class="text-xs text-text-muted mb-3">Backup your recommendations or migrate between devices</div>
@@ -977,7 +980,7 @@
 									handleExport();
 									showSettingsMenu = false;
 								}}
-								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg mb-1"
+								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg mb-1"
 							>
 								Export Data
 								<div class="text-xs text-text-muted mt-0.5">Download all your recommendations as JSON</div>
@@ -987,13 +990,13 @@
 									handleImport();
 									showSettingsMenu = false;
 								}}
-								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg"
+								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg"
 							>
 								Import Data
 								<div class="text-xs text-text-muted mt-0.5">Restore from a previous export file</div>
 							</button>
 						</div>
-						<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+						<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
 						<button
 							onclick={() => {
 								handlePurgeAll();
@@ -1053,13 +1056,13 @@
 		<div class="mb-8 flex justify-center gap-2">
 			<button
 				onclick={() => (showCompleted = false)}
-				class="px-4 py-2 text-sm rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800'}"
+				class="px-4 py-2 text-sm rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
 			>
 				Active ({recommendations.length})
 			</button>
 			<button
 				onclick={() => (showCompleted = true)}
-				class="px-4 py-2 text-sm rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800'}"
+				class="px-4 py-2 text-sm rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
 			>
 				Completed ({completedRecs.length})
 			</button>
@@ -1077,23 +1080,33 @@
 				return acc;
 			}, [] as Array<{ category: string; active: number; completed: number; total: number }>)}
 			{#if categoryCounts.length > 0}
-				<div class="mb-6 p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
-					<h3 class="text-sm font-semibold text-text dark:text-white mb-3">By Category</h3>
-					<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-						{#each categoryCounts as { category, active, completed, total }}
-							<button
-								onclick={() => handleCategoryChange(category)}
-								class="text-left p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-							>
-								<div class="text-xs font-medium text-text dark:text-white mb-1">
-									{formatCategory(category)}
-								</div>
-								<div class="text-xs text-text-muted">
-									{total} total · {active} active
-								</div>
-							</button>
-						{/each}
-					</div>
+				<div class="mb-6 rounded-xl bg-white dark:bg-surface-dark shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
+					<button
+						onclick={() => categoriesCollapsed = !categoriesCollapsed}
+						class="w-full p-4 flex items-center justify-between hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+					>
+						<h3 class="text-sm font-semibold text-text dark:text-white">By Category</h3>
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-200 {categoriesCollapsed ? '' : 'rotate-180'}">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</button>
+					{#if !categoriesCollapsed}
+						<div class="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+							{#each categoryCounts as { category, active, completed, total }}
+								<button
+									onclick={() => handleCategoryChange(category)}
+									class="text-left p-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+								>
+									<div class="text-xs font-medium text-text dark:text-white mb-1">
+										{formatCategory(category)}
+									</div>
+									<div class="text-xs text-text-muted">
+										{total} total · {active} active
+									</div>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			{/if}
 		{/if}
@@ -1132,7 +1145,7 @@
 			>
 				<div class="min-h-screen flex flex-col">
 					<!-- Header -->
-					<div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
+					<div class="sticky top-0 bg-white dark:bg-surface-dark border-b border-black/5 dark:border-white/5 px-4 py-4 sm:px-6">
 						<div class="flex items-center justify-between max-w-2xl mx-auto">
 							<div class="flex items-center gap-3">
 								<h2 class="text-xl sm:text-2xl font-semibold text-text dark:text-white">
@@ -1151,7 +1164,7 @@
 							</div>
 							<button
 								onclick={() => resetForm()}
-								class="p-2 text-text-muted hover:text-text dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+								class="p-2 text-text-muted hover:text-text dark:hover:text-white transition-colors rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10"
 								aria-label="Close"
 							>
 								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1206,7 +1219,7 @@
 														type="button"
 														data-category={cat}
 														onclick={() => formCategory = cat}
-														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-md scale-105' : 'bg-gray-100 dark:bg-gray-800 text-text dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'}"
+														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-md scale-105' : 'bg-surface-light dark:bg-surface-dark text-text dark:text-white hover:bg-surface-light/80 dark:hover:bg-surface-dark/80'}"
 													>
 														{formatCategory(cat)}
 													</button>
@@ -1227,7 +1240,7 @@
 												id="bulk-titles"
 												bind:value={bulkTitles}
 												placeholder="Enter multiple titles, one per line...&#10;Example:&#10;The Matrix&#10;Inception&#10;Interstellar"
-												class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
+												class="w-full rounded-xl border border-black/5 dark:border-white/5 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
 												rows="10"
 												autofocus
 											></textarea>
@@ -1267,7 +1280,7 @@
 													<button
 														type="button"
 														onclick={() => formCategory = match.category}
-														class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+														class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-light dark:bg-surface-dark hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
 													>
 														<span class="font-medium">{formatCategory(match.category)}</span>
 														<span class="text-text-muted">({match.count})</span>
@@ -1314,7 +1327,7 @@
 											id="description"
 											bind:value={formDescription}
 											placeholder="Add some notes..."
-											class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
+											class="w-full rounded-xl border border-black/5 dark:border-white/5 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
 											rows="6"
 											onkeydown={(e) => {
 												if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -1330,7 +1343,7 @@
 					</div>
 
 					<!-- Footer with Save Button -->
-					<div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6 safe-area-inset-bottom">
+					<div class="sticky bottom-0 bg-white dark:bg-surface-dark border-t border-black/5 dark:border-white/5 px-4 py-4 sm:px-6 safe-area-inset-bottom">
 						<div class="max-w-2xl mx-auto">
 							<Button
 								onclick={() => saveRecommendation()}
@@ -1381,7 +1394,7 @@
 							{#if completingId === rec.id}
 								<!-- Complete Form -->
 								<div class="space-y-4">
-									<div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3">
+									<div class="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-3">
 										<h3 class="text-lg font-semibold text-text dark:text-white">
 											Mark as Completed
 										</h3>
@@ -1420,7 +1433,7 @@
 											id="review"
 											bind:value={reviewText}
 											placeholder="What did you think?"
-											class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+											class="w-full rounded-xl border border-black/5 dark:border-white/5 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
 											rows="3"
 											onkeydown={(e) => {
 												if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -1492,7 +1505,7 @@
 										{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
 											<div class="mb-2 flex gap-1 flex-wrap">
 												{#each rec.metadata.genres.slice(0, 3) as genre}
-													<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+													<span class="text-xs bg-surface-light dark:bg-surface-dark px-2 py-1 rounded">
 														{genre}
 													</span>
 												{/each}
@@ -1544,7 +1557,7 @@
 												<p class="text-xs text-text-muted mt-1">Rating: {rec.metadata.rating}/10</p>
 											{/if}
 											{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
-												<p class="text-sm text-text-muted mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+												<p class="text-sm text-text-muted mt-2 pt-2 border-t border-black/5 dark:border-white/5">
 													{rec.metadata.overview}
 												</p>
 											{/if}
@@ -1555,7 +1568,7 @@
 										<!-- Expand/Collapse indicator -->
 										<button
 											onclick={(e) => { e.stopPropagation(); toggleCardExpansion(rec.id); }}
-											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
 											title={expandedCardId === rec.id ? "Show less" : "Show more"}
 										>
 											<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1571,7 +1584,7 @@
 										</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
-											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
 											title="Share"
 										>
 											<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1584,7 +1597,7 @@
 										</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); startEdit(rec); }}
-											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
 											title="Edit"
 										>
 											✎
@@ -1682,7 +1695,7 @@
 									{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
 										<div class="mb-2 flex gap-1 flex-wrap">
 											{#each rec.metadata.genres.slice(0, 3) as genre}
-												<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+												<span class="text-xs bg-surface-light dark:bg-surface-dark px-2 py-1 rounded">
 													{genre}
 												</span>
 											{/each}
@@ -1752,7 +1765,7 @@
 											<p class="text-xs text-text-muted mt-1">Rating: {rec.metadata.rating}/10</p>
 										{/if}
 										{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
-											<p class="text-sm text-text-muted mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+											<p class="text-sm text-text-muted mt-2 pt-2 border-t border-black/5 dark:border-white/5">
 												{rec.metadata.overview}
 											</p>
 										{/if}
@@ -1763,7 +1776,7 @@
 									<!-- Expand/Collapse indicator -->
 									<button
 										onclick={(e) => { e.stopPropagation(); toggleCardExpansion(rec.id); }}
-										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
 										title={expandedCardId === rec.id ? "Show less" : "Show more"}
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1772,7 +1785,7 @@
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
-										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
 										title="Share"
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1785,7 +1798,7 @@
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); uncompleteRecommendation(rec.id); }}
-										class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
 										title="Move back to active"
 									>
 										↶
@@ -1821,11 +1834,11 @@
 			>
 				<div
 					role="document"
-					class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full p-8 max-h-[80vh] overflow-y-auto"
+					class="bg-white dark:bg-surface-dark rounded-2xl shadow-xl max-w-2xl w-full p-8 max-h-[80vh] overflow-y-auto"
 					onclick={(e) => e.stopPropagation()}
 					onkeydown={(e) => e.stopPropagation()}
 				>
-					<div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+					<div class="flex items-center justify-between mb-6 pb-4 border-b border-black/5 dark:border-white/5">
 						<h2 id="keyboard-shortcuts-title" class="text-2xl font-semibold text-text dark:text-white">Keyboard Shortcuts</h2>
 						<button
 							onclick={() => (showKeyboardHelp = false)}
@@ -1845,19 +1858,19 @@
 							<div class="space-y-2">
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Show this help</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">?</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">?</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Close dialog/form</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">Esc</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">Esc</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Focus search</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">/</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">/</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Toggle active/completed</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">T</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">T</kbd>
 								</div>
 							</div>
 						</div>
@@ -1867,27 +1880,27 @@
 							<div class="space-y-2">
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">New recommendation</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">N</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">N</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Navigate down</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">↓</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">↓</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Navigate up</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">↑</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">↑</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Complete/uncomplete selected</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">Enter</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">Enter</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Edit selected</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">E</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">E</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Delete selected</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">D</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">D</kbd>
 								</div>
 							</div>
 						</div>
@@ -1897,19 +1910,19 @@
 							<div class="space-y-2">
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Save form</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">⌘S / Ctrl+S</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">⌘S / Ctrl+S</kbd>
 								</div>
 								<div class="flex justify-between items-center">
 									<span class="text-text-muted">Save from textarea</span>
-									<kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">⌘Enter / Ctrl+Enter</kbd>
+									<kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">⌘Enter / Ctrl+Enter</kbd>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
+					<div class="mt-6 pt-4 border-t border-black/5 dark:border-white/5 text-center">
 						<p class="text-sm text-text-muted">
-							Press <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">?</kbd> anytime to toggle this help
+							Press <kbd class="px-2 py-1 bg-surface-light dark:bg-surface-dark rounded text-sm font-mono">?</kbd> anytime to toggle this help
 						</p>
 					</div>
 				</div>
@@ -1946,7 +1959,7 @@
 		>
 			<div
 				role="document"
-				class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6"
+				class="bg-white dark:bg-surface-dark rounded-2xl shadow-xl max-w-md w-full p-6"
 			>
 				<h2 id="migration-title" class="text-xl font-semibold text-text dark:text-white mb-3">
 					Save Your Recommendations?
@@ -1967,7 +1980,7 @@
 	{/if}
 
 	<!-- Footer -->
-	<footer class="mt-20 pt-8 pb-8 border-t border-gray-200 dark:border-gray-700">
+	<footer class="mt-20 pt-8 pb-8 border-t border-black/5 dark:border-white/5">
 		<div class="max-w-4xl mx-auto px-4">
 			<div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-text-muted">
 				<div class="flex items-center gap-4">

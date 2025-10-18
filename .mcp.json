@@ -4,6 +4,12 @@
       "type": "http",
       "url": "https://mcp.svelte.dev/mcp"
     },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["chrome-devtools-mcp@latest"],
+      "env": {}
+    },
     "cloudflareBrowserRendering": {
       "type": "http",
       "url": "https://browser.mcp.cloudflare.com/mcp"
@@ -11,14 +17,6 @@
     "browserRendering": {
       "type": "http",
       "url": "https://browser.mcp.cloudflare.com/mcp"
-    },
-    "chrome-devtools": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "chrome-devtools-mcp@latest"
-      ],
-      "env": {}
     }
   }
 }

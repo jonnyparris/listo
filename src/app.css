@@ -31,46 +31,57 @@
 @layer components {
 	/* Card component */
 	.card {
-		@apply bg-white dark:bg-gray-800;
+		@apply bg-white dark:bg-surface-dark;
 		@apply rounded-2xl shadow-soft;
 		@apply p-6;
-		@apply transition-all duration-200;
+		@apply transition-all duration-200 ease-spring;
 	}
 
 	.card:hover {
 		@apply shadow-card;
+		transform: translateY(-2px);
 	}
 
 	/* Input styles */
 	.input {
 		@apply w-full rounded-xl;
-		@apply bg-background-light dark:bg-gray-800;
-		@apply border border-gray-200 dark:border-gray-700;
+		@apply bg-surface-light dark:bg-surface-dark;
+		@apply border border-black/5 dark:border-white/5;
 		@apply px-4 py-3;
 		@apply text-text dark:text-white;
 		@apply placeholder:text-text-muted;
-		@apply focus:outline-none focus:ring-2 focus:ring-primary;
-		@apply transition-all duration-200;
+		@apply focus:outline-none focus:ring-2 focus:ring-primary-dark dark:focus:ring-primary focus:ring-offset-2;
+		@apply transition-all duration-200 ease-spring;
 	}
 
 	/* Button styles */
 	.btn {
 		@apply px-6 py-3 rounded-xl;
 		@apply font-medium;
-		@apply transition-all duration-200;
+		@apply transition-all duration-200 ease-spring;
 		@apply focus:outline-none focus:ring-2;
+		@apply min-h-[44px] min-w-[44px];
 	}
 
 	.btn-primary {
 		@apply bg-primary hover:bg-primary-dark;
 		@apply text-text;
-		@apply focus:ring-primary;
+		@apply focus:ring-primary-dark dark:focus:ring-primary;
 	}
 
 	.btn-secondary {
 		@apply bg-secondary hover:bg-secondary-dark;
 		@apply text-text;
 		@apply focus:ring-secondary;
+	}
+	
+	/* Border utility */
+	.border-subtle {
+		border: 1px solid rgba(0, 0, 0, 0.05);
+	}
+	
+	.dark .border-subtle {
+		border-color: rgba(255, 255, 255, 0.05);
 	}
 }
 
