@@ -75,9 +75,10 @@ export async function generateRegistrationOptionsForUser(user: { id: string; use
 		// Prevent users from re-registering existing authenticators
 		excludeCredentials: [],
 		authenticatorSelection: {
-			// Require platform authenticators (Touch ID, Face ID, Windows Hello)
-			authenticatorAttachment: 'platform',
-			// Require passkeys that are stored on the device
+			// Allow both platform (Touch ID, Face ID) and cross-platform (security keys) authenticators
+			// This ensures Firefox users on macOS can still create passkeys
+			// authenticatorAttachment: 'platform', // Removed to support Firefox
+			// Require passkeys that are stored on the device (discoverable credentials)
 			residentKey: 'required',
 			// Require user verification (biometric or PIN)
 			userVerification: 'required'
