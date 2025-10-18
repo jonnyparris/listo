@@ -18,14 +18,6 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-xl">
-	{#if $page.data.user}
-		<header class="flex justify-end items-center p-4">
-			<form action="/api/auth/logout" method="post">
-				<Button type="submit" size="sm" variant="ghost">Sign Out</Button>
-			</form>
-		</header>
-	{/if}
-
 	<main>
 		{@render children?.()}
 	</main>

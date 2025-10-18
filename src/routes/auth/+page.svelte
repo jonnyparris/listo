@@ -9,16 +9,12 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let supported = $state(true);
-	let isFirefox = $state(false);
 
 	onMount(() => {
 		supported = authService.isSupported();
 		if (!supported) {
 			error = 'Passkeys are not supported in your browser. Please use a modern browser with WebAuthn support.';
 		}
-
-		// Detect Firefox
-		isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 	});
 
 	async function handleLogin() {
@@ -85,12 +81,6 @@
 			{#if error}
 				<div class="mb-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
 					{error}
-				</div>
-			{/if}
-
-			{#if isFirefox && !error}
-				<div class="mb-6 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
-					<strong>Firefox Note:</strong> Firefox on macOS doesn't yet support Touch ID for passkeys. You can use a security key or try Safari/Chrome for Touch ID support.
 				</div>
 			{/if}
 

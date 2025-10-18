@@ -1,5 +1,3 @@
 # Completed
-- [x] Make the header logo a clickable link to the homepage - Logo already had href="/" link
-- [x] Fix passkey/fingerprint signin prompt - Fixed RP ID to use jonnyparris.club consistently across all deployments
-- [x] Auto-scroll selected category into view on small screens - Added $effect to scroll selected category into center on form open
-- [x] Bulk add multiple titles - Added "Bulk" toggle in add form for entering multiple titles (one per line) in same category
+- [] the signout link is in a weird place an only appears on a full page reload. Make it a seamless part of the UX
+- [] remove the inaccurate and unnecessary note about firefox touchid
