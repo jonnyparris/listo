@@ -23,8 +23,8 @@
 	}: Props = $props();
 
 	const variants = {
-		primary: 'bg-primary hover:bg-primary-dark text-text',
-		secondary: 'bg-secondary hover:bg-secondary-dark text-text',
+		primary: 'bg-primary hover:bg-primary-dark text-text dark:text-text shadow-sm hover:shadow-md',
+		secondary: 'bg-secondary hover:bg-secondary-dark text-text dark:text-text shadow-sm hover:shadow-md',
 		outline: 'border-2 border-primary bg-transparent hover:bg-primary/10 text-text dark:text-white',
 		ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-text dark:text-white'
 	};

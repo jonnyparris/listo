@@ -676,7 +676,7 @@
 	});
 </script>
 
-<div class="min-h-screen bg-background-light dark:bg-background-dark">
+<div class="min-h-screen bg-background-light dark:bg-background-dark pb-20">
 	<div class="mx-auto max-w-4xl px-4 py-8">
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
 		<div class="flex items-center justify-end gap-2 mb-4">
@@ -823,20 +823,18 @@
 
 		<!-- View Toggle -->
 		<div class="mb-8 flex justify-center gap-2">
-			<Button
+			<button
 				onclick={() => (showCompleted = false)}
-				variant={!showCompleted ? 'primary' : 'ghost'}
-				size="md"
+				class="px-4 py-2 text-sm rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800'}"
 			>
 				Active ({recommendations.length})
-			</Button>
-			<Button
+			</button>
+			<button
 				onclick={() => (showCompleted = true)}
-				variant={showCompleted ? 'primary' : 'ghost'}
-				size="md"
+				class="px-4 py-2 text-sm rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800'}"
 			>
 				Completed ({completedRecs.length})
-			</Button>
+			</button>
 		</div>
 
 		<!-- Category Subtotals -->
@@ -1583,4 +1581,36 @@
 
 	<!-- PWA Install Prompt -->
 	<InstallPrompt />
+
+	<!-- Footer -->
+	<footer class="mt-20 pt-8 pb-8 border-t border-gray-200 dark:border-gray-700">
+		<div class="max-w-4xl mx-auto px-4">
+			<div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-text-muted">
+				<div class="flex items-center gap-4">
+					<a href="/about" class="hover:text-text dark:hover:text-white transition-colors">
+						About
+					</a>
+					<span class="text-xs">·</span>
+					<button
+						onclick={() => showKeyboardHelp = true}
+						class="hover:text-text dark:hover:text-white transition-colors"
+					>
+						Keyboard Shortcuts
+					</button>
+					<span class="text-xs">·</span>
+					<button
+						onclick={() => showSettingsMenu = true}
+						class="hover:text-text dark:hover:text-white transition-colors"
+					>
+						Settings
+					</button>
+				</div>
+				<div class="text-xs flex items-center gap-2">
+					<span>Made with intentional chill</span>
+					<span class="opacity-50">·</span>
+					<span>Listo © 2025</span>
+				</div>
+			</div>
+		</div>
+	</footer>
 </div>

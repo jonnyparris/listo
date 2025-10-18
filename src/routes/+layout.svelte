@@ -17,17 +17,14 @@
 	/>
 </svelte:head>
 
-<div class="container mx-auto max-w-xl p-4">
-	<header class="flex justify-between items-center mb-8">
-		<a href="/">
-			<h1 class="text-2xl font-bold">Listo</h1>
-		</a>
-		{#if $page.data.user}
+<div class="container mx-auto max-w-xl">
+	{#if $page.data.user}
+		<header class="flex justify-end items-center p-4">
 			<form action="/api/auth/logout" method="post">
-				<Button type="submit">Sign Out</Button>
+				<Button type="submit" size="sm" variant="ghost">Sign Out</Button>
 			</form>
-		{/if}
-	</header>
+		</header>
+	{/if}
 
 	<main>
 		{@render children?.()}

@@ -1,19 +1,14 @@
-- [x] autofocus the title input field when opening the add recommendation form
-- [x] if user seems to be on a mobile device then prompt them to add to homescreen only on the first time that they visit the app
-- [x] cmd+enter from the title input should create the recommendation too (already implemented via form onkeydown for textareas)
-- [x] review styling and make any changes for better UX and accessibility
-- [x] add accessibility improvements (keyboard handlers, ARIA roles)
+# High priority
+- [] when i try to login with passkey for the production deploy I get: The RP ID "localhost" is invalid for this domain.
+- [] when the app is in dark mode, not all of the site background is dark as it should be.
+- [] test locally and improve layout for small screens, use more icons where appropriate.
+- [] there's a "Listo" heading at the top that looks weird and duplicates the logo. Save space
+- [] green buttons with white text look like they're disabled. Fix with a more practical but tasteful styling.
+- [] the active and completed buttons should be way smaller in the overall visual hierarchy.
+- [] Add a standard footer with useful information.
 
-## Ready for friends to test!
-
-The app now has:
-- Autofocus on title input when opening the add form
-- PWA install prompt for mobile users (first visit only)
-- Improved accessibility with proper ARIA roles and keyboard navigation
-- All existing features working smoothly
-
-## Optional enhancements (can do later based on feedback):
-- [] Test the PWA install prompt on actual mobile devices
-- [] Add loading skeleton for recommendation cards
-- [] Add onboarding/tutorial for first-time users
-- [] Consider adding analytics to track usage patterns
+# Medium
+- [] The import export features need explanation somewhere in the app. Verify their funtionality locally and fix if needed.
+- [] if you start adding recommendations without logging in, and then you create an account or login, then the user should be asked whether the recommendations you created before should be saved to your account.
+- [] new optional tag attribute: "source"
+- [] let's use some kind of map api to enhance restaurant recommendations
