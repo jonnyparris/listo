@@ -509,13 +509,39 @@
 	async function shareRecommendation(rec: LocalRecommendation) {
 		const shareText = formatShareText(rec);
 
+		// Get image URL if available
+		const imageUrl = rec.metadata?.poster_url ||
+		                 rec.metadata?.thumbnail_url ||
+		                 rec.metadata?.cover_url ||
+		                 rec.metadata?.album_art;
+
 		// Try Web Share API if available
 		if (navigator.share) {
 			try {
-				await navigator.share({
+				const shareData: ShareData = {
 					title: `Recommendation: ${rec.title}`,
 					text: shareText
-				});
+				};
+
+				// If there's an image and the browser supports sharing files
+				if (imageUrl && navigator.canShare) {
+					try {
+						// Fetch the image and convert to blob
+						const response = await fetch(imageUrl);
+						const blob = await response.blob();
+						const file = new File([blob], 'recommendation.jpg', { type: blob.type });
+
+						// Check if we can share files
+						if (navigator.canShare({ files: [file] })) {
+							shareData.files = [file];
+						}
+					} catch (imgError) {
+						console.warn('Failed to fetch image for sharing:', imgError);
+						// Continue without image
+					}
+				}
+
+				await navigator.share(shareData);
 				toastStore.success('Shared successfully!');
 				return;
 			} catch (error) {
@@ -529,7 +555,14 @@
 
 		// Fallback to clipboard
 		try {
-			await navigator.clipboard.writeText(shareText);
+			let clipboardText = shareText;
+
+			// Add image URL to clipboard text if available
+			if (imageUrl) {
+				clipboardText += `\n\nImage: ${imageUrl}`;
+			}
+
+			await navigator.clipboard.writeText(clipboardText);
 			toastStore.success('Copied to clipboard!');
 		} catch (error) {
 			console.error('Failed to share:', error);
@@ -540,6 +573,10 @@
 	function formatShareText(rec: LocalRecommendation): string {
 		let text = `📌 ${rec.title}\n`;
 		text += `Category: ${formatCategory(rec.category)}\n`;
+
+		if (rec.source) {
+			text += `Recommended by: ${rec.source}\n`;
+		}
 
 		if (rec.metadata?.year) {
 			text += `Year: ${rec.metadata.year}\n`;
@@ -561,7 +598,18 @@
 			text += `\nReview: ${rec.review}\n`;
 		}
 
-		text += `\nShared from Listo`;
+		// Add relevant links
+		if (rec.metadata?.spotify_url) {
+			text += `\n🎵 Spotify: ${rec.metadata.spotify_url}`;
+		}
+		if (rec.metadata?.youtube_url) {
+			text += `\n📺 YouTube: ${rec.metadata.youtube_url}`;
+		}
+		if (rec.metadata?.google_maps_link) {
+			text += `\n📍 Location: ${rec.metadata.google_maps_link}`;
+		}
+
+		text += `\n\nShared from Listo`;
 
 		return text;
 	}
