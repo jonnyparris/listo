@@ -1,6 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { page } from '$app/stores';
+	import { Button } from '$lib/components/ui';
 
 	let { children } = $props();
 </script>
@@ -15,4 +17,19 @@
 	/>
 </svelte:head>
 
-{@render children?.()}
+<div class="container mx-auto max-w-xl p-4">
+	<header class="flex justify-between items-center mb-8">
+		<a href="/">
+			<h1 class="text-2xl font-bold">Listo</h1>
+		</a>
+		{#if $page.data.user}
+			<form action="/api/auth/logout" method="post">
+				<Button type="submit">Sign Out</Button>
+			</form>
+		{/if}
+	</header>
+
+	<main>
+		{@render children?.()}
+	</main>
+</div>

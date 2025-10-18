@@ -21,7 +21,7 @@ export class AuthService {
 			const options = await optionsResponse.json();
 
 			// Prompt user to create a passkey
-			const registrationResponse = await startRegistration(options);
+			const registrationResponse = await startRegistration({ optionsJSON: options });
 
 			// Verify registration with server
 			const verificationResponse = await fetch('/api/auth/register/verify', {
@@ -65,7 +65,7 @@ export class AuthService {
 			const options = await optionsResponse.json();
 
 			// Prompt user to authenticate with passkey
-			const authenticationResponse = await startAuthentication(options);
+			const authenticationResponse = await startAuthentication({ optionsJSON: options });
 
 			// Verify authentication with server
 			const verificationResponse = await fetch('/api/auth/login/verify', {

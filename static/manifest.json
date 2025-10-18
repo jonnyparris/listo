@@ -1,0 +1,19 @@
+{
+  "name": "Listo - intentional chill",
+  "short_name": "Listo",
+  "description": "A minimalist app for capturing and managing personal recommendations",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDFBF7",
+  "theme_color": "#BFE3D0",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

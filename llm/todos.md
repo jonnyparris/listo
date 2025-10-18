@@ -1,15 +1,12 @@
 - [x] When saving recommendations selected via an enhancement, ensure there is an image or thumbnail saved.
-- [x] Selecting a saved recommendation should expand it's full details.
-  - ✅ IMPLEMENTED: Click on completed recommendation cards to expand/collapse
-  - Shows full description and additional metadata when expanded
-  - Animated chevron icon indicates state
+- [] Selecting a saved recommendation should expand it's full details.
 - [x] When recommendations are filtered, there should be a link to go back to all categories by clearing the filter
   - ✅ IMPLEMENTED: SearchBar.svelte already has a "Clear" button (lines 82-95) that appears when filters are active
   - The button clears both search text and resets category to "all"
-- [x] must be able to sign out
-  - ✅ IMPLEMENTED: Sign Out button in header works and redirects to /auth
 - [] The AI suggest should automatically show a subtotal of items found in other categories when there's initial input in the new recommendation form
+- [] must be able to sign out
 - [] how else can i make the mobile experience feel as native/seamless as possible?
 - [] more user friendly message when they've already registered
 - [] the categories should be selectable from a cluster of buttons instead of buried in a dropdown to remove the need for an extra click. Make it clean and modern though, not cluttered, and still easy to use on mobile
+- [] dark mode toggle should affect the whole page
 - [] Review the layout and update anything that feels unintuitive

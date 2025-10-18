@@ -10,6 +10,8 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	const body = await request.json();
 	const challenge = cookies.get('auth-challenge');
 
+	console.log('Login verify - raw body:', JSON.stringify(body, null, 2));
+
 	if (!challenge) {
 		return json({ error: 'Authentication session expired' }, { status: 400 });
 	}
@@ -19,7 +21,11 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const origin = request.headers.get('origin') || 'http://localhost:5173';
 
 		// Get the credential from database
-		const credentialId = base64url.encode(new Uint8Array(body.id));
+		console.log('body.id type:', typeof body.id, 'value:', body.id, 'rawId:', body.rawId);
+		// body.id is already a base64url-encoded string from the browser
+		const credentialId = body.id;
+
+		console.log('Looking up credential:', { credentialId });
 
 		const credential = await platform.env.DB.prepare(
 			'SELECT id, user_id, public_key, counter, transports FROM credentials WHERE id = ?'
@@ -28,8 +34,18 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			.first();
 
 		if (!credential) {
-			return json({ error: 'Credential not found' }, { status: 404 });
+			console.error('Credential not found in database:', { credentialId });
+			return json({ error: 'Credential not found. This passkey may not be registered on this device.' }, { status: 404 });
 		}
+
+		console.log('Retrieved credential from DB:', {
+			id: credential.id,
+			userId: credential.user_id,
+			counter: credential.counter,
+			counterType: typeof credential.counter,
+			hasPublicKey: !!credential.public_key,
+			hasTransports: !!credential.transports
+		});
 
 		// Verify the authentication response
 		const verification = await verifyAuthentication(body, challenge, {
@@ -47,7 +63,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		await platform.env.DB.prepare(
 			'UPDATE credentials SET counter = ?, last_used_at = unixepoch() WHERE id = ?'
 		)
-			.bind(verification.authenticationInfo.newCounter, credential.id)
+			.bind(verification.authenticationInfo?.newCounter ?? 0, credential.id)
 			.run();
 
 		// Clear auth challenge cookie
