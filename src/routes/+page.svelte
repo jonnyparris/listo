@@ -35,6 +35,7 @@
 	let formTitle = $state('');
 	let formCategory = $state<Category>('movie');
 	let formDescription = $state('');
+	let formSource = $state('');
 	let formMetadata = $state<any>(undefined);
 
 	// Review form state
@@ -351,6 +352,7 @@
 				title: formTitle.trim(),
 				category: formCategory,
 				description: formDescription.trim() || undefined,
+				source: formSource.trim() || undefined,
 				metadata: plainMetadata,
 				synced: false
 			});
@@ -363,6 +365,7 @@
 				category: formCategory,
 				title: formTitle.trim(),
 				description: formDescription.trim() || undefined,
+				source: formSource.trim() || undefined,
 				metadata: plainMetadata,
 				created_at: Math.floor(Date.now() / 1000),
 				updated_at: Math.floor(Date.now() / 1000),
@@ -381,6 +384,7 @@
 		formTitle = rec.title;
 		formCategory = rec.category;
 		formDescription = rec.description || '';
+		formSource = rec.source || '';
 		formMetadata = rec.metadata;
 		showAddForm = true;
 	}
@@ -434,6 +438,7 @@
 	function resetForm() {
 		formTitle = '';
 		formDescription = '';
+		formSource = '';
 		formCategory = 'movie';
 		formMetadata = undefined;
 		showAddForm = false;
@@ -1104,6 +1109,23 @@
 
 									<div>
 										<label
+											for="source"
+											class="mb-2 block text-sm font-medium text-text dark:text-white"
+										>
+											Source (optional)
+										</label>
+										<Input
+											id="source"
+											bind:value={formSource}
+											placeholder="Who recommended this? (friend, podcast, article...)"
+										/>
+										<p class="mt-1 text-xs text-text-muted">
+											Keep track of where you heard about this
+										</p>
+									</div>
+
+									<div>
+										<label
 											for="description"
 											class="mb-2 block text-sm font-medium text-text dark:text-white"
 										>
@@ -1282,6 +1304,14 @@
 										<h3 class="mb-1 text-lg font-semibold text-text dark:text-white">
 											{rec.title}
 										</h3>
+										{#if rec.source}
+											<div class="mb-2 text-xs text-text-muted flex items-center gap-1">
+												<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+												</svg>
+												Recommended by {rec.source}
+											</div>
+										{/if}
 										{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
 											<div class="mb-2 flex gap-1 flex-wrap">
 												{#each rec.metadata.genres.slice(0, 3) as genre}
@@ -1457,6 +1487,14 @@
 									<h3 class="mb-1 text-lg font-semibold text-text dark:text-white">
 										{rec.title}
 									</h3>
+									{#if rec.source}
+										<div class="mb-2 text-xs text-text-muted flex items-center gap-1">
+											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+											</svg>
+											Recommended by {rec.source}
+										</div>
+									{/if}
 									{#if rec.rating}
 										<div class="mb-2 flex gap-1 text-secondary">
 											{#each Array(rec.rating) as _}

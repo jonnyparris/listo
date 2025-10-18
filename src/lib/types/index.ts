@@ -30,6 +30,7 @@ export interface Recommendation {
 	description?: string;
 	metadata?: RecommendationMetadata;
 	tags?: string;
+	source?: string; // Where the recommendation came from (e.g., "friend", "podcast", "article")
 	created_at: number;
 	updated_at: number;
 	deleted_at?: number;
