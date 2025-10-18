@@ -1,13 +1,6 @@
-- [x] Signin via same passkey method as account creation
-- [x] use spotify enhancement (integrated Spotify for artist/song categories)
-- [x] save a link from the enhancement in the recommendation for ease of consumption after it's saved (spotify_url and youtube_url shown in cards)
-- [x] add subtotals for how many recommendations are in each category
-- [x] make sure the top nav icons are vertically aligned
-- [x] Better loading states for autocomplete (added spinner and "no results" messages)
-- [x] Improve empty state messaging (added icons, headings, and CTAs)
-- [x] Add smooth transitions/animations (spring easing added to tailwind config)
-- [x] Error boundary for top-level errors (created +error.svelte page)
-
-## Low Priority
-- [ ] Unit tests
-- [ ] E2E tests
+- [] When I create an account on my macbook, I get prompted to use my fingerprint and the passkey is saved. However when I try to signin to my account from a fresh browser, I only get prompted to use a physical security key or another device via a QR code. Seems like allowCredentials should be omitted when trying to signin? Check and fix please.
+- [] When saving recommendations selected via an enhancement, ensure there is an image or thumbnail saved.
+- [] Selecting a saved recommendation should expand it's full details.
+- [] When recommendations are filtered, there should be a link to go back to all categories by clearing the filter
+- [] The AI suggest should automatically show a subtotal of items found in other categories when there's initial input in the new recommendation form
+- [] Review the layout and update anything that feels unintuitive

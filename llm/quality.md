@@ -1,4 +1,4 @@
-Adhere to the following code quality guidelines:
+Maintain these quality guidelines:
 
 ## Development:
 - Local dev: npm run dev
@@ -32,4 +32,5 @@ Adhere to the following code quality guidelines:
 - make descriptive git commits as you complete bitesize chunks of new functionality
 
 ## UI Validation
-- deploy and then check UI output using the browser rendering mcp tool available to you
+- deploy and then verify UI output using the chrome devtools mcp or  browser rendering mcp tool available to you. Prefer the chrome devtools mcp tools
+- use the chrome devtools mcp for end to end testing and debugging of ui flows

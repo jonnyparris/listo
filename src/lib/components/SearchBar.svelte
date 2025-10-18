@@ -59,6 +59,15 @@
 			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 			.join(' ');
 	}
+
+	function clearFilters() {
+		value = '';
+		selectedCategory = 'all';
+		onSearch?.('');
+		onCategoryChange?.('all');
+	}
+
+	const hasActiveFilters = $derived(value.trim() !== '' || selectedCategory !== 'all');
 </script>
 
 <div class="flex gap-3">
@@ -70,6 +79,20 @@
 			class="w-full"
 		/>
 	</div>
+	{#if hasActiveFilters}
+		<button
+			type="button"
+			onclick={clearFilters}
+			class="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+			title="Clear filters"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="18" y1="6" x2="6" y2="18"></line>
+				<line x1="6" y1="6" x2="18" y2="18"></line>
+			</svg>
+			<span class="hidden sm:inline">Clear</span>
+		</button>
+	{/if}
 	{#if showCategoryFilter}
 		<div class="relative">
 			<select
@@ -78,7 +101,7 @@
 				class="appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 pr-10 text-text dark:text-white focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-w-[180px]"
 				style="-webkit-appearance: none; -moz-appearance: none;"
 			>
-				{#each categories as cat}
+				{#each categories as cat (cat)}
 					<option value={cat}>{formatCategory(cat)}</option>
 				{/each}
 			</select>
