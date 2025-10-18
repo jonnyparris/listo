@@ -1,3 +1,3 @@
 # Completed
-- [] the signout link is in a weird place an only appears on a full page reload. Make it a seamless part of the UX
-- [] remove the inaccurate and unnecessary note about firefox touchid
+- [x] Removed duplicate signout button from layout that only appeared on reload - now consistently available in settings menu
+- [x] Removed inaccurate Firefox Touch ID warning from auth page
