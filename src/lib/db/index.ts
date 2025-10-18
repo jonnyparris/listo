@@ -92,7 +92,7 @@ export const dbOperations = {
 
 	// Get unsynced recommendations
 	async getUnsyncedRecommendations(userId: string) {
-		return db.recommendations.where('[user_id+synced]').equals([userId, 0]).toArray();
+		return db.recommendations.where('[user_id+synced]').equals([userId, false]).toArray();
 	},
 
 	// Mark recommendations as synced
