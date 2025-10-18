@@ -35,7 +35,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const verification = await verifyAuthentication(body, challenge, {
 			id: credential.id as string,
 			publicKey: base64url.decode(credential.public_key as string),
-			counter: credential.counter as number,
+			counter: (credential.counter as number) ?? 0,
 			transports: credential.transports ? JSON.parse(credential.transports as string) : undefined
 		}, origin);
 
