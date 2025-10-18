@@ -74,6 +74,17 @@
 	let showMigrationPrompt = $state(false);
 	let sessionRecommendations = $state<LocalRecommendation[]>([]);
 
+	// Source suggestions - get unique sources from all recommendations
+	let sourceSuggestions = $derived.by(() => {
+		const sources = new Set<string>();
+		[...recommendations, ...completedRecs].forEach(rec => {
+			if (rec.source && rec.source.trim()) {
+				sources.add(rec.source.trim());
+			}
+		});
+		return Array.from(sources).sort();
+	});
+
 	const categories: Category[] = [
 		'movie',
 		'show',
@@ -1166,7 +1177,13 @@
 											id="source"
 											bind:value={formSource}
 											placeholder="Who recommended this? (friend, podcast, article...)"
+											list="source-suggestions"
 										/>
+										<datalist id="source-suggestions">
+											{#each sourceSuggestions as source}
+												<option value={source}></option>
+											{/each}
+										</datalist>
 										<p class="mt-1 text-xs text-text-muted">
 											Keep track of where you heard about this
 										</p>
