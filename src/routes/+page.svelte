@@ -1317,28 +1317,39 @@
 												Enter one title per line. They'll all be saved in the {formatCategory(formCategory)} category.
 											</p>
 										{:else}
-											<label for="title" class="mb-2 block text-sm font-medium text-text dark:text-white">
-												Title
-											</label>
-											{#if formCategory === 'movie' || formCategory === 'show'}
-												<TMDBAutocomplete
-													bind:value={formTitle}
-													category={formCategory}
-													onSelect={handleEnrichmentSelect}
-													placeholder={`Search for a ${formCategory}...`}
-													autofocus
-												/>
-											{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
-												<EnrichmentAutocomplete
-													bind:value={formTitle}
-													category={formCategory}
-													onSelect={handleEnrichmentSelect}
-													placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
-													autofocus
-												/>
-											{:else}
-												<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus />
-											{/if}
+											<div class="relative">
+												<label for="title" class="mb-2 block text-sm font-medium text-text dark:text-white">
+													Title
+													{#if enrichmentLoading}
+														<span class="ml-2 inline-flex items-center gap-1 text-xs text-primary">
+															<svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+																<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+																<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+															</svg>
+															Loading...
+														</span>
+													{/if}
+												</label>
+												{#if formCategory === 'movie' || formCategory === 'show'}
+													<TMDBAutocomplete
+														bind:value={formTitle}
+														category={formCategory}
+														onSelect={handleEnrichmentSelect}
+														placeholder={`Search for a ${formCategory}...`}
+														autofocus
+													/>
+												{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
+													<EnrichmentAutocomplete
+														bind:value={formTitle}
+														category={formCategory}
+														onSelect={handleEnrichmentSelect}
+														placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
+														autofocus
+													/>
+												{:else}
+													<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus />
+												{/if}
+											</div>
 										{/if}
 
 										<!-- Category matches subtotal -->
