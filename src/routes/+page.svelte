@@ -57,6 +57,9 @@
 	// AI state
 	let aiSuggesting = $state(false);
 
+	// Category matches state
+	let categoryMatches = $state<{ category: Category; count: number }[]>([]);
+
 	// Confirm modal state
 	let confirmModal = $state<{
 		show: boolean;
@@ -645,6 +648,42 @@
 	function toggleCardExpansion(id: string) {
 		expandedCardId = expandedCardId === id ? null : id;
 	}
+
+	// Search for similar recommendations across categories
+	function searchSimilarRecommendations(title: string) {
+		if (!title || title.trim().length < 2) {
+			categoryMatches = [];
+			return;
+		}
+
+		const searchTerm = title.toLowerCase().trim();
+		const matchesByCategory = new Map<Category, number>();
+
+		// Search through all recommendations
+		const allRecs = [...recommendations, ...completedRecs];
+
+		for (const rec of allRecs) {
+			// Skip if it's the current category
+			if (rec.category === formCategory) continue;
+
+			// Check if title matches (fuzzy search)
+			if (rec.title.toLowerCase().includes(searchTerm)) {
+				const count = matchesByCategory.get(rec.category) || 0;
+				matchesByCategory.set(rec.category, count + 1);
+			}
+		}
+
+		// Convert to array and sort by count
+		categoryMatches = Array.from(matchesByCategory.entries())
+			.map(([category, count]) => ({ category, count }))
+			.sort((a, b) => b.count - a.count)
+			.slice(0, 3); // Show top 3 categories only
+	}
+
+	// Watch formTitle changes to update category matches
+	$effect(() => {
+		searchSimilarRecommendations(formTitle);
+	});
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
@@ -897,8 +936,8 @@
 							>
 								<div class="space-y-6">
 									<div>
-										<div class="mb-2 flex items-center justify-between">
-											<label for="category" class="block text-sm font-medium text-text dark:text-white">
+										<div class="mb-3 flex items-center justify-between">
+											<label class="block text-sm font-medium text-text dark:text-white">
 												Category
 											</label>
 											<button
@@ -922,23 +961,22 @@
 												{/if}
 											</button>
 										</div>
-										<div class="relative">
-											<select
-												id="category"
-												bind:value={formCategory}
-												class="appearance-none w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 pr-10 text-text dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-base cursor-pointer"
-												style="-webkit-appearance: none; -moz-appearance: none;"
-											>
+										<!-- Category button cluster -->
+										<div class="relative -mx-4 px-4 sm:mx-0 sm:px-0">
+											<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
 												{#each categories as cat}
-													<option value={cat}>{formatCategory(cat)}</option>
+													<button
+														type="button"
+														onclick={() => formCategory = cat}
+														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-md scale-105' : 'bg-gray-100 dark:bg-gray-800 text-text dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'}"
+													>
+														{formatCategory(cat)}
+													</button>
 												{/each}
-											</select>
-											<!-- Custom dropdown arrow -->
-											<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
-												<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-													<polyline points="6 9 12 15 18 9"></polyline>
-												</svg>
 											</div>
+											<!-- Fade edges for scroll indication -->
+											<div class="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-white dark:from-gray-900 to-transparent pointer-events-none sm:hidden"></div>
+											<div class="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent pointer-events-none sm:hidden"></div>
 										</div>
 									</div>
 
@@ -962,6 +1000,26 @@
 											/>
 										{:else}
 											<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
+										{/if}
+
+										<!-- Category matches subtotal -->
+										{#if categoryMatches.length > 0}
+											<div class="mt-2 text-xs text-text-muted flex items-center gap-1 flex-wrap">
+												<span>Also found in:</span>
+												{#each categoryMatches as match, i}
+													<button
+														type="button"
+														onclick={() => formCategory = match.category}
+														class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+													>
+														<span class="font-medium">{formatCategory(match.category)}</span>
+														<span class="text-text-muted">({match.count})</span>
+													</button>
+													{#if i < categoryMatches.length - 1}
+														<span>·</span>
+													{/if}
+												{/each}
+											</div>
 										{/if}
 									</div>
 
