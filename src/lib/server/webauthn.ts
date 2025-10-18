@@ -24,16 +24,8 @@ const getConfig = (requestOrigin?: string) => {
 				origin: requestOrigin
 			};
 		}
-		// For ALL production deployments (both custom domain and Pages),
-		// use jonnyparris.club as the RP ID for consistency.
-		// This allows passkeys to work across listo.jonnyparris.club and all *.pages.dev deployments.
-		if (url.hostname === 'listo.jonnyparris.club' || url.hostname.endsWith('.pages.dev')) {
-			return {
-				rpID: 'jonnyparris.club',
-				origin: requestOrigin
-			};
-		}
-		// Fallback: use the full hostname
+		// Use the actual hostname as RP ID for production
+		// This ensures passkeys work consistently on the domain they were registered on
 		return {
 			rpID: url.hostname,
 			origin: requestOrigin
