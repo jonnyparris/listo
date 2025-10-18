@@ -1,7 +1,7 @@
 # High priority
-- [] "The RP ID "localhost" is invalid for this domain" when trying to login to the production version
-- [] I get an error when trying to sync, soemthing about key path user_id+synced on object store recommendations is not indexed.
-- [] restaurant recommendations should include a link to search in google maps
+- [x] "The RP ID "localhost" is invalid for this domain" when trying to login to the production version - FIXED
+- [x] I get an error when trying to sync, something about key path user_id+synced on object store recommendations is not indexed - FIXED
+- [x] restaurant recommendations should include a link to search in google maps - COMPLETED
 - [] source input should suggest previously saved sources within user account
 - [] confirm that dark mode has a dark background for the whole site when using a desktop browser
 
