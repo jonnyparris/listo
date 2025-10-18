@@ -1089,9 +1089,9 @@
 							{:else}
 								<!-- Normal View -->
 								<div class="flex items-start gap-4">
-									{#if rec.metadata?.poster_url}
+									{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
 										<img
-											src={rec.metadata.poster_url}
+											src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
 											alt={rec.title}
 											class="h-32 w-24 rounded object-cover flex-shrink-0"
 											loading="lazy"
@@ -1230,9 +1230,9 @@
 					{#each filteredCompletedRecs as rec, index (rec.id)}
 						<Card class="{selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''}">
 							<div class="flex items-start gap-4">
-								{#if rec.metadata?.poster_url}
+								{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
 									<img
-										src={rec.metadata.poster_url}
+										src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
 										alt={rec.title}
 										class="h-32 w-24 rounded object-cover flex-shrink-0"
 										loading="lazy"
