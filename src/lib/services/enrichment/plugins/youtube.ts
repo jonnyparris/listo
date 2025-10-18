@@ -83,21 +83,14 @@ export class YouTubePlugin implements EnrichmentPlugin {
 			const snippet = video.snippet;
 			const statistics = video.statistics;
 
-			const metadata: RecommendationMetadata = {
-				type: 'youtube',
-				video_id: id,
-				title: snippet.title,
-				channel_name: snippet.channelTitle,
-				channel_id: snippet.channelId,
-				description: snippet.description,
-				published_at: snippet.publishedAt,
-				thumbnail_url: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url,
-				duration: video.contentDetails?.duration,
-				view_count: parseInt(statistics?.viewCount || '0'),
-				like_count: parseInt(statistics?.likeCount || '0'),
-				url: `https://www.youtube.com/watch?v=${id}`,
-				tags: snippet.tags
-			};
+		const metadata: RecommendationMetadata = {
+			type: 'youtube',
+			video_id: id,
+			channel: snippet.channelTitle,
+			description: snippet.description,
+			thumbnail_url: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url,
+			url: `https://www.youtube.com/watch?v=${id}`
+		};
 
 			return {
 				success: true,

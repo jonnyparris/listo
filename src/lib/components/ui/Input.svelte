@@ -1,5 +1,6 @@
 <script lang="ts">
 	interface Props {
+		id?: string;
 		value?: string;
 		placeholder?: string;
 		type?: string;
@@ -10,9 +11,11 @@
 		onblur?: (event: FocusEvent) => void;
 		onfocus?: (event: FocusEvent) => void;
 		onkeydown?: (event: KeyboardEvent) => void;
+		list?: string;
 	}
 
 	let {
+		id,
 		value = $bindable(''),
 		placeholder = '',
 		type = 'text',
@@ -22,7 +25,8 @@
 		oninput,
 		onblur,
 		onfocus,
-		onkeydown
+		onkeydown,
+		list
 	}: Props = $props();
 
 	const classes = $derived(
@@ -30,15 +34,33 @@
 	);
 </script>
 
-<input
-	bind:value
-	{type}
-	{placeholder}
-	{disabled}
-	{autofocus}
-	class={classes}
-	{oninput}
-	{onblur}
-	{onfocus}
-	{onkeydown}
-/>
+{#if autofocus}
+	<input
+		{id}
+		bind:value
+		{type}
+		{placeholder}
+		{disabled}
+		autofocus
+		class={classes}
+		{oninput}
+		{onblur}
+		{onfocus}
+		{onkeydown}
+		{list}
+	/>
+{:else}
+	<input
+		{id}
+		bind:value
+		{type}
+		{placeholder}
+		{disabled}
+		class={classes}
+		{oninput}
+		{onblur}
+		{onfocus}
+		{onkeydown}
+		{list}
+	/>
+{/if}

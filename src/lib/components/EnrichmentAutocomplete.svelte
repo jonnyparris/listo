@@ -69,9 +69,9 @@
 				`/api/enrichment/enrich?id=${suggestion.id}&category=${category}`
 			);
 			if (response.ok) {
-				const enrichedData = await response.json();
-				// Pass the enriched suggestion with full metadata
-				onSelect?.({ ...suggestion, metadata: enrichedData });
+			const enrichedData = await response.json();
+			// Pass the suggestion title along with enriched metadata
+			onSelect?.(suggestion);
 			} else {
 				// Fallback to basic suggestion
 				onSelect?.(suggestion);
@@ -129,12 +129,12 @@
 					onclick={() => selectSuggestion(suggestion)}
 					class="flex w-full items-start gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0"
 				>
-					{#if suggestion.thumbnail || suggestion.imageUrl}
-						<img
-							src={suggestion.thumbnail || suggestion.imageUrl}
-							alt={suggestion.title}
-							class="h-16 w-12 rounded object-cover flex-shrink-0"
-						/>
+				{#if suggestion.thumbnail}
+					<img
+						src={suggestion.thumbnail}
+						alt={suggestion.title}
+						class="h-16 w-12 rounded object-cover flex-shrink-0"
+					/>
 					{/if}
 					<div class="flex-1 min-w-0">
 						<div class="font-medium text-text dark:text-white truncate">

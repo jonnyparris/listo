@@ -85,7 +85,7 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 			return this.accessToken;
 		}
 
-		const authString = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+		const authString = btoa(`${this.clientId}:${this.clientSecret}`);
 
 		const response = await fetch('https://accounts.spotify.com/api/token', {
 			method: 'POST',
@@ -147,76 +147,54 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 
 			const data: SpotifySearchResponse = await response.json();
 
-			// Handle track search
-			if (category === 'song' && data.tracks) {
-				return data.tracks.items.slice(0, 5).map((track) => ({
-					id: track.id,
-					title: track.name,
-					subtitle: `by ${track.artists.map((a) => a.name).join(', ')} • ${track.album.name}`,
-					imageUrl: track.album.images[2]?.url || track.album.images[0]?.url,
-					metadata: {
-						artists: track.artists.map((a) => a.name),
-						album: track.album.name,
-						spotify_url: track.external_urls.spotify,
-						preview_url: track.preview_url
-					}
-				}));
+		// Handle track search
+		if (category === 'song' && data.tracks) {
+			return data.tracks.items.slice(0, 5).map((track) => ({
+				id: track.id,
+				title: track.name,
+				subtitle: `by ${track.artists.map((a) => a.name).join(', ')} • ${track.album.name}`,
+				thumbnail: track.album.images[2]?.url || track.album.images[0]?.url
+			}));
+		}
+
+		// Handle artist search
+		if (category === 'artist' && data.artists) {
+			return data.artists.items.slice(0, 5).map((artist) => ({
+				id: artist.id,
+				title: artist.name,
+				subtitle: artist.genres.slice(0, 3).join(', ') || 'Artist',
+				thumbnail: artist.images[2]?.url || artist.images[0]?.url
+			}));
+		}
+
+		// Handle genre search (return both tracks and artists)
+		if (category === 'genre') {
+			const results: SearchSuggestion[] = [];
+
+			if (data.tracks) {
+				results.push(
+					...data.tracks.items.slice(0, 3).map((track) => ({
+						id: track.id,
+						title: track.name,
+						subtitle: `Track by ${track.artists.map((a) => a.name).join(', ')}`,
+						thumbnail: track.album.images[2]?.url || track.album.images[0]?.url
+					}))
+				);
 			}
 
-			// Handle artist search
-			if (category === 'artist' && data.artists) {
-				return data.artists.items.slice(0, 5).map((artist) => ({
-					id: artist.id,
-					title: artist.name,
-					subtitle: artist.genres.slice(0, 3).join(', ') || 'Artist',
-					imageUrl: artist.images[2]?.url || artist.images[0]?.url,
-					metadata: {
-						genres: artist.genres,
-						spotify_url: artist.external_urls.spotify,
-						followers: artist.followers.total
-					}
-				}));
+			if (data.artists) {
+				results.push(
+					...data.artists.items.slice(0, 2).map((artist) => ({
+						id: artist.id,
+						title: artist.name,
+						subtitle: `Artist • ${artist.genres.slice(0, 2).join(', ')}`,
+						thumbnail: artist.images[2]?.url || artist.images[0]?.url
+					}))
+				);
 			}
 
-			// Handle genre search (return both tracks and artists)
-			if (category === 'genre') {
-				const results: SearchSuggestion[] = [];
-
-				if (data.tracks) {
-					results.push(
-						...data.tracks.items.slice(0, 3).map((track) => ({
-							id: track.id,
-							title: track.name,
-							subtitle: `Track by ${track.artists.map((a) => a.name).join(', ')}`,
-							imageUrl: track.album.images[2]?.url || track.album.images[0]?.url,
-							metadata: {
-								type: 'track',
-								artists: track.artists.map((a) => a.name),
-								album: track.album.name,
-								spotify_url: track.external_urls.spotify
-							}
-						}))
-					);
-				}
-
-				if (data.artists) {
-					results.push(
-						...data.artists.items.slice(0, 2).map((artist) => ({
-							id: artist.id,
-							title: artist.name,
-							subtitle: `Artist • ${artist.genres.slice(0, 2).join(', ')}`,
-							imageUrl: artist.images[2]?.url || artist.images[0]?.url,
-							metadata: {
-								type: 'artist',
-								genres: artist.genres,
-								spotify_url: artist.external_urls.spotify
-							}
-						}))
-					);
-				}
-
-				return results;
-			}
+			return results;
+		}
 
 			return [];
 		} catch (error) {
@@ -249,20 +227,20 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 
 				const track: SpotifyTrackDetails = await response.json();
 
-				return {
-					success: true,
-					metadata: {
-						title: track.name,
-						artists: track.artists.map((a) => a.name),
-						album: track.album.name,
-						release_date: track.album.release_date,
-						duration_ms: track.duration_ms,
-						popularity: track.popularity,
-						poster_url: track.album.images[1]?.url || track.album.images[0]?.url,
-						spotify_url: track.external_urls.spotify,
-						preview_url: track.preview_url
-					}
-				};
+			return {
+				success: true,
+				metadata: {
+					type: 'music',
+					artist: track.artists.map((a) => a.name).join(', '),
+					year: track.album.release_date
+						? new Date(track.album.release_date).getFullYear()
+						: undefined,
+					runtime: Math.floor(track.duration_ms / 60000),
+					rating: track.popularity,
+					album_art: track.album.images[1]?.url || track.album.images[0]?.url,
+					spotify_link: track.external_urls.spotify
+				}
+			};
 			}
 
 			if (category === 'artist') {
@@ -282,17 +260,16 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 
 				const artist: SpotifyArtistDetails = await response.json();
 
-				return {
-					success: true,
-					metadata: {
-						title: artist.name,
-						genres: artist.genres,
-						followers: artist.followers.total,
-						popularity: artist.popularity,
-						poster_url: artist.images[1]?.url || artist.images[0]?.url,
-						spotify_url: artist.external_urls.spotify
-					}
-				};
+			return {
+				success: true,
+				metadata: {
+					type: 'music',
+					genres: artist.genres,
+					rating: artist.popularity,
+					album_art: artist.images[1]?.url || artist.images[0]?.url,
+					spotify_link: artist.external_urls.spotify
+				}
+			};
 			}
 
 			return {

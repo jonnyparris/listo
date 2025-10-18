@@ -54,21 +54,17 @@ export class BooksPlugin implements EnrichmentPlugin {
 			const data = await response.json();
 			const info = data.volumeInfo;
 
-			const metadata: RecommendationMetadata = {
-				type: 'book',
-				google_books_id: id,
-				title: info.title,
-				authors: info.authors,
-				publisher: info.publisher,
-				year: info.publishedDate ? new Date(info.publishedDate).getFullYear() : undefined,
-				isbn: info.industryIdentifiers?.find((i: any) => i.type === 'ISBN_13')?.identifier,
-				page_count: info.pageCount,
-				categories: info.categories,
-				description: info.description,
-				thumbnail_url: info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail,
-				preview_link: info.previewLink,
-				rating: info.averageRating
-			};
+		const metadata: RecommendationMetadata = {
+			type: 'book',
+			author: info.authors?.join(', '),
+			year: info.publishedDate ? new Date(info.publishedDate).getFullYear() : undefined,
+			isbn: info.industryIdentifiers?.find((i: any) => i.type === 'ISBN_13')?.identifier,
+			genres: info.categories,
+			description: info.description,
+			thumbnail_url: info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail,
+			google_books_link: info.previewLink,
+			rating: info.averageRating
+		};
 
 			return {
 				success: true,

@@ -109,40 +109,44 @@
 		'quote'
 	];
 
-	onMount(async () => {
-		// Get current user (authenticated or session-only)
-		const user = await authService.getCurrentUser();
+	onMount(() => {
+		async function setup() {
+			// Get current user (authenticated or session-only)
+			const user = await authService.getCurrentUser();
 
-		// Check if we have session recommendations before login
-		const hadSessionRecommendations = localStorage.getItem('had_session_recommendations') === 'true';
-		const previousSessionId = localStorage.getItem('previous_session_id');
+			// Check if we have session recommendations before login
+			const hadSessionRecommendations = localStorage.getItem('had_session_recommendations') === 'true';
+			const previousSessionId = localStorage.getItem('previous_session_id');
 
-		// If user just authenticated and had session recommendations, offer to migrate
-		if (user.authenticated && hadSessionRecommendations && previousSessionId && previousSessionId !== user.userId) {
-			// Load recommendations from previous session
-			sessionRecommendations = await dbOperations.getAllRecommendations(previousSessionId);
-			const completedSessionRecs = await dbOperations.getCompletedRecommendations(previousSessionId);
-			sessionRecommendations = [...sessionRecommendations, ...completedSessionRecs];
+			// If user just authenticated and had session recommendations, offer to migrate
+			if (user.authenticated && hadSessionRecommendations && previousSessionId && previousSessionId !== user.userId) {
+				// Load recommendations from previous session
+				sessionRecommendations = await dbOperations.getAllRecommendations(previousSessionId);
+				const completedSessionRecs = await dbOperations.getCompletedRecommendations(previousSessionId);
+				sessionRecommendations = [...sessionRecommendations, ...completedSessionRecs];
 
-			if (sessionRecommendations.length > 0) {
-				showMigrationPrompt = true;
-			} else {
-				// Clear flags if no recommendations found
-				localStorage.removeItem('had_session_recommendations');
-				localStorage.removeItem('previous_session_id');
+				if (sessionRecommendations.length > 0) {
+					showMigrationPrompt = true;
+				} else {
+					// Clear flags if no recommendations found
+					localStorage.removeItem('had_session_recommendations');
+					localStorage.removeItem('previous_session_id');
+				}
+			}
+
+			userId = user.userId;
+			isAuthenticated = user.authenticated;
+
+			await loadRecommendations();
+
+			// Track if this session has recommendations (for future migration)
+			if (!user.authenticated && recommendations.length > 0) {
+				localStorage.setItem('had_session_recommendations', 'true');
+				localStorage.setItem('previous_session_id', user.userId);
 			}
 		}
 
-		userId = user.userId;
-		isAuthenticated = user.authenticated;
-
-		await loadRecommendations();
-
-		// Track if this session has recommendations (for future migration)
-		if (!user.authenticated && recommendations.length > 0) {
-			localStorage.setItem('had_session_recommendations', 'true');
-			localStorage.setItem('previous_session_id', user.userId);
-		}
+		setup();
 
 		// Global keyboard shortcuts
 		const handleKeydown = (e: KeyboardEvent) => {
