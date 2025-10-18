@@ -13,11 +13,11 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 
 		// For discoverable credentials (passkeys), we don't need to query credentials
 		// The browser will present any saved passkey for this domain to the user
-		// We pass an empty array to enable this flow
+		// By completely omitting the credentials parameter, the library won't include
+		// allowCredentials in the options, enabling discoverable credential flow
 
-		// Generate authentication options with empty credentials array
-		// This enables discoverable credential authentication
-		const options = await generateAuthenticationOptionsForUser([], origin);
+		// Generate authentication options for discoverable credentials
+		const options = await generateAuthenticationOptionsForUser(origin);
 
 		// Store the challenge in a cookie for verification
 		cookies.set('auth-challenge', options.challenge, {

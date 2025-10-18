@@ -93,15 +93,14 @@ export async function verifyRegistration(
  * For discoverable credentials (passkeys), we omit allowCredentials to let the browser
  * use any saved passkey for this domain. This enables the "use saved passkey" flow.
  */
-export async function generateAuthenticationOptionsForUser(credentials: StoredCredential[], requestOrigin?: string) {
+export async function generateAuthenticationOptionsForUser(requestOrigin?: string) {
 	const { rpID } = getConfig(requestOrigin);
 
 	const options = await generateAuthenticationOptions({
 		rpID,
-		// Omit allowCredentials to enable discoverable credential authentication
-		// This allows the browser to prompt for any saved passkey for this domain
-		// instead of requiring a specific credential list
-		allowCredentials: [],
+		// By COMPLETELY omitting allowCredentials (not setting it to []),
+		// we enable discoverable credential authentication.
+		// This allows the browser to prompt for any saved passkey for this domain.
 		// Require user verification to trigger Touch ID/Face ID
 		userVerification: 'required'
 	});
