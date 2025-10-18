@@ -282,17 +282,21 @@
 
 	async function migrateSessionRecommendations() {
 		try {
-			for (const rec of sessionRecommendations) {
-				// Update user_id to current authenticated user
-				const migratedRec = { ...rec, user_id: userId, synced: false };
-				await dbOperations.addRecommendation(migratedRec);
-			}
-
-			// Clear session data
 			const previousSessionId = localStorage.getItem('previous_session_id');
-			if (previousSessionId) {
-				// Delete old session recommendations
-				for (const rec of sessionRecommendations) {
+			
+			for (const rec of sessionRecommendations) {
+				// Create a new recommendation with the current user's ID
+				const migratedRec = { 
+					...rec, 
+					user_id: userId, 
+					synced: false,
+					// Generate new ID to avoid conflicts
+					id: crypto.randomUUID()
+				};
+				await dbOperations.addRecommendation(migratedRec);
+				
+				// Delete the old session recommendation if it has a different user_id
+				if (previousSessionId && rec.user_id === previousSessionId) {
 					await dbOperations.deleteRecommendation(rec.id);
 				}
 			}
@@ -303,6 +307,11 @@
 			await loadRecommendations();
 			showMigrationPrompt = false;
 			toastStore.success(`Migrated ${sessionRecommendations.length} recommendations to your account`);
+			
+			// Trigger sync to save to server
+			if (isAuthenticated) {
+				await handleSync();
+			}
 		} catch (error) {
 			console.error('Migration failed:', error);
 			toastStore.error('Failed to migrate recommendations');
@@ -548,16 +557,24 @@
 		syncing = true;
 		lastSyncError = null;
 
-		const result = await syncService.fullSync(userId);
+		try {
+			const result = await syncService.fullSync(userId);
 
-		if (result.success) {
-			await loadRecommendations();
-			toastStore.success('Synced successfully');
-		} else {
-			lastSyncError = result.error || 'Sync failed';
+			if (result.success) {
+				// Reload recommendations to reflect synced state
+				await loadRecommendations();
+				toastStore.success('Synced successfully');
+			} else {
+				lastSyncError = result.error || 'Sync failed';
+				toastStore.error(result.error || 'Sync failed');
+			}
+		} catch (error) {
+			console.error('Sync error:', error);
+			lastSyncError = error instanceof Error ? error.message : 'Sync failed';
+			toastStore.error('Sync failed');
+		} finally {
+			syncing = false;
 		}
-
-		syncing = false;
 	}
 
 	async function shareRecommendation(rec: LocalRecommendation) {
