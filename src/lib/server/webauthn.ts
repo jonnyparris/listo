@@ -24,22 +24,12 @@ const getConfig = (requestOrigin?: string) => {
 				origin: requestOrigin
 			};
 		}
-		// For custom domain (listo.jonnyparris.club), use it directly
-		if (url.hostname === 'listo.jonnyparris.club') {
+		// For ALL production deployments (both custom domain and Pages),
+		// use jonnyparris.club as the RP ID for consistency.
+		// This allows passkeys to work across listo.jonnyparris.club and all *.pages.dev deployments.
+		if (url.hostname === 'listo.jonnyparris.club' || url.hostname.endsWith('.pages.dev')) {
 			return {
-				rpID: 'listo.jonnyparris.club',
-				origin: requestOrigin
-			};
-		}
-		// For Cloudflare Pages deployments (*.listo-a46.pages.dev)
-		// Extract the base domain (listo-a46.pages.dev) to use as RP ID
-		// This allows passkeys to work across all preview deployments
-		const parts = url.hostname.split('.');
-		if (parts.length >= 3 && parts[parts.length - 2] === 'pages' && parts[parts.length - 1] === 'dev') {
-			// Get the last 3 parts: project-hash.pages.dev
-			const rpID = parts.slice(-3).join('.');
-			return {
-				rpID,
+				rpID: 'jonnyparris.club',
 				origin: requestOrigin
 			};
 		}
