@@ -93,7 +93,7 @@ export async function verifyRegistration(
  * For discoverable credentials (passkeys), we omit allowCredentials to let the browser
  * use any saved passkey for this domain. This enables the "use saved passkey" flow.
  */
-export async function generateAuthenticationOptionsForUser(requestOrigin?: string) {
+export async function generateAuthenticationOptionsForUser(user?: { id: string }, requestOrigin?: string) {
 	const { rpID } = getConfig(requestOrigin);
 
 	const options = await generateAuthenticationOptions({
@@ -119,16 +119,52 @@ export async function verifyAuthentication(
 ): Promise<VerifiedAuthenticationResponse> {
 	const { rpID, origin } = getConfig(requestOrigin);
 
+	// Validate credential object has all required fields
+	if (!credential || !credential.id || !credential.publicKey) {
+		throw new Error('Invalid credential: missing required fields');
+	}
+
+	// Ensure counter is a valid number (never undefined)
+	const counter = Number(credential.counter) || 0;
+
+	console.log('Verifying authentication with credential:', {
+		id: credential.id,
+		publicKeyLength: credential.publicKey?.length,
+		counter: counter,
+		counterType: typeof counter
+	});
+
+	// Convert publicKey to Uint8Array if it's not already
+	const publicKeyUint8 = credential.publicKey instanceof Uint8Array
+		? credential.publicKey
+		: new Uint8Array(Object.values(credential.publicKey));
+
+	// WebAuthnCredential structure for the library
+	const webAuthnCredential: {
+		id: string;
+		publicKey: Uint8Array;
+		counter: number;
+		transports?: AuthenticatorTransportFuture[];
+	} = {
+		id: credential.id, // Keep as base64url string
+		publicKey: new Uint8Array(publicKeyUint8), // Ensure proper Uint8Array type
+		counter: counter,
+		transports: credential.transports
+	};
+
+	console.log('WebAuthnCredential object being passed:', {
+		id: webAuthnCredential.id,
+		publicKeyLength: webAuthnCredential.publicKey.length,
+		counter: webAuthnCredential.counter,
+		transports: webAuthnCredential.transports
+	});
+
 	return await verifyAuthenticationResponse({
 		response,
 		expectedChallenge,
 		expectedOrigin: origin,
 		expectedRPID: rpID,
-		authenticator: {
-			credentialID: credential.id,
-			credentialPublicKey: credential.publicKey,
-			counter: credential.counter
-		}
+		credential: webAuthnCredential
 	});
 }
 
