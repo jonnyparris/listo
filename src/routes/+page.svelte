@@ -810,6 +810,26 @@
 	$effect(() => {
 		searchSimilarRecommendations(formTitle);
 	});
+
+	// Sign out functionality
+	async function handleSignOut() {
+		confirmModal = {
+			show: true,
+			title: 'Sign Out',
+			message: 'Are you sure you want to sign out? Your local data will remain on this device.',
+			onConfirm: async () => {
+				const result = await authService.logout();
+				if (result.success) {
+					toastStore.success('Signed out successfully');
+					// Reload the page to reset state
+					window.location.reload();
+				} else {
+					toastStore.error(result.error || 'Failed to sign out');
+				}
+				confirmModal = null;
+			}
+		};
+	}
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
@@ -875,6 +895,21 @@
 							}
 						}}
 					>
+						{#if isAuthenticated}
+							<div class="px-4 py-2 text-xs text-text-muted border-b border-gray-200 dark:border-gray-700">
+								Signed in
+							</div>
+							<button
+								onclick={() => {
+									handleSignOut();
+									showSettingsMenu = false;
+								}}
+								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							>
+								Sign Out
+							</button>
+							<div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+						{/if}
 						<button
 							onclick={() => {
 								goto('/about');

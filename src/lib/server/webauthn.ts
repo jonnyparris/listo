@@ -12,9 +12,9 @@ import type { AuthenticatorTransportFuture } from '@simplewebauthn/types';
 const rpName = 'Listo';
 // Note: This runs on the server, so we use environment-based detection
 // For localhost development, we use localhost
-// For production, we use the main production domain (not preview deployment URLs)
+// For production, we extract the base domain from the request origin
 const getConfig = (requestOrigin?: string) => {
-	// If we have a request origin, check if it's localhost
+	// If we have a request origin, parse it
 	if (requestOrigin) {
 		const url = new URL(requestOrigin);
 		// For localhost, use localhost as RP ID
@@ -24,11 +24,29 @@ const getConfig = (requestOrigin?: string) => {
 				origin: requestOrigin
 			};
 		}
-		// For production (including preview deployments), always use the main production domain
-		// This ensures passkeys work across all deployments
+		// For custom domain (listo.jonnyparris.club), use it directly
+		if (url.hostname === 'listo.jonnyparris.club') {
+			return {
+				rpID: 'listo.jonnyparris.club',
+				origin: requestOrigin
+			};
+		}
+		// For Cloudflare Pages deployments (*.listo-a46.pages.dev)
+		// Extract the base domain (listo-a46.pages.dev) to use as RP ID
+		// This allows passkeys to work across all preview deployments
+		const parts = url.hostname.split('.');
+		if (parts.length >= 3 && parts[parts.length - 2] === 'pages' && parts[parts.length - 1] === 'dev') {
+			// Get the last 3 parts: project-hash.pages.dev
+			const rpID = parts.slice(-3).join('.');
+			return {
+				rpID,
+				origin: requestOrigin
+			};
+		}
+		// Fallback: use the full hostname
 		return {
-			rpID: 'listo.jonnyparris.club',
-			origin: `https://listo.jonnyparris.club`
+			rpID: url.hostname,
+			origin: requestOrigin
 		};
 	}
 	// Default for development
