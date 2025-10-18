@@ -1357,14 +1357,12 @@
 													{rec.metadata.year}
 												</span>
 											{/if}
-											{#if !rec.synced}
-												<span
-													class="rounded-full bg-secondary/20 px-2 py-1 text-xs text-text-muted"
-													title="Not synced"
-												>
-													⏱
-												</span>
-											{/if}
+											<span
+												class="rounded-full px-2 py-1 text-xs {rec.synced ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-secondary/20 text-text-muted'}"
+												title={rec.synced ? 'Synced' : 'Not synced'}
+											>
+												{rec.synced ? '✓' : '⏱'}
+											</span>
 										</div>
 										<h3 class="mb-1 text-lg font-semibold text-text dark:text-white">
 											{rec.title}
