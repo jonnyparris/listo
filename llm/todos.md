@@ -1,6 +1,11 @@
-- [] When I create an account on my macbook, I get prompted to use my fingerprint and the passkey is saved. However when I try to signin to my account from a fresh browser, I only get prompted to use a physical security key or another device via a QR code. Seems like allowCredentials should be omitted when trying to signin? Check and fix please.
-- [] When saving recommendations selected via an enhancement, ensure there is an image or thumbnail saved.
+- [x] When saving recommendations selected via an enhancement, ensure there is an image or thumbnail saved.
 - [] Selecting a saved recommendation should expand it's full details.
-- [] When recommendations are filtered, there should be a link to go back to all categories by clearing the filter
+- [x] When recommendations are filtered, there should be a link to go back to all categories by clearing the filter
+  - ✅ IMPLEMENTED: SearchBar.svelte already has a "Clear" button (lines 82-95) that appears when filters are active
+  - The button clears both search text and resets category to "all"
 - [] The AI suggest should automatically show a subtotal of items found in other categories when there's initial input in the new recommendation form
+- [] must be able to sign out
+- [] how else can i make the mobile experience feel as native/seamless as possible?
+- [] more user friendly message when they've already registered
+- [] the categories should be selectable from a cluster of buttons instead of buried in a dropdown to remove the need for an extra click. Make it clean and modern though, not cluttered, and still easy to use on mobile
 - [] Review the layout and update anything that feels unintuitive

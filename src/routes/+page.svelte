@@ -400,6 +400,16 @@
 		} else if (suggestion.metadata?.description && !formDescription) {
 			formDescription = suggestion.metadata.description;
 		}
+
+		// Ensure we have an image for the recommendation
+		if (suggestion.thumbnail) {
+			if (!formMetadata) {
+				formMetadata = {};
+			}
+			if (!formMetadata.poster_url && !formMetadata.thumbnail_url && !formMetadata.cover_url) {
+				formMetadata.thumbnail_url = suggestion.thumbnail;
+			}
+		}
 	}
 
 	async function handleSync() {
@@ -1233,8 +1243,8 @@
 					</div>
 				{:else}
 					{#each filteredCompletedRecs as rec, index (rec.id)}
-						<Card class="{selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''}">
-							<div class="flex items-start gap-4">
+						<Card class="{selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''} cursor-pointer hover:shadow-lg transition-shadow">
+							<div class="flex items-start gap-4" onclick={() => toggleCardExpansion(rec.id)}>
 								{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
 									<img
 										src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
@@ -1315,13 +1325,35 @@
 										<p class="text-sm italic text-text-muted mb-2">"{rec.review}"</p>
 									{/if}
 									{#if rec.description}
-										<p class="text-sm text-text-muted line-clamp-3">{rec.description}</p>
+										<p class="text-sm text-text-muted {expandedCardId === rec.id ? '' : 'line-clamp-3'}">
+											{rec.description}
+										</p>
+									{/if}
+									{#if expandedCardId === rec.id}
+										<!-- Additional metadata shown when expanded -->
+										{#if rec.metadata?.runtime}
+											<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
+										{/if}
+										{#if rec.metadata?.rating}
+											<p class="text-xs text-text-muted mt-1">Rating: {rec.metadata.rating}/10</p>
+										{/if}
+										{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
+											<p class="text-sm text-text-muted mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+												{rec.metadata.overview}
+											</p>
+										{/if}
 									{/if}
 								</div>
 
-								<div class="flex gap-2 flex-shrink-0">
+								<div class="flex gap-2 flex-shrink-0 items-start">
+									<!-- Expand/Collapse indicator -->
+									<div class="text-text-muted mt-1">
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform {expandedCardId === rec.id ? 'rotate-180' : ''}">
+											<polyline points="6 9 12 15 18 9"></polyline>
+										</svg>
+									</div>
 									<button
-										onclick={() => shareRecommendation(rec)}
+										onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
 										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 										title="Share"
 									>
@@ -1334,14 +1366,14 @@
 										</svg>
 									</button>
 									<button
-										onclick={() => uncompleteRecommendation(rec.id)}
+										onclick={(e) => { e.stopPropagation(); uncompleteRecommendation(rec.id); }}
 										class="rounded-lg px-3 py-1 text-sm text-text-muted hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 										title="Move back to active"
 									>
 										↶
 									</button>
 									<button
-										onclick={() => deleteRecommendation(rec.id)}
+										onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
 										class="rounded-lg px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 										title="Delete"
 									>
