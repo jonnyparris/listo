@@ -42,6 +42,7 @@
 
 	// Card navigation state
 	let selectedCardIndex = $state(-1);
+	let expandedCardId = $state<string | null>(null);
 
 	// Keyboard shortcuts help
 	let showKeyboardHelp = $state(false);
@@ -626,9 +627,13 @@
 		} catch (error) {
 			console.error('AI suggestion failed:', error);
 			toastStore.error('Failed to suggest category');
-		} finally {
+		} finally{
 			aiSuggesting = false;
 		}
+	}
+
+	function toggleCardExpansion(id: string) {
+		expandedCardId = expandedCardId === id ? null : id;
 	}
 </script>
 
