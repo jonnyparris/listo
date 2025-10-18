@@ -11,15 +11,24 @@ import type { AuthenticatorTransportFuture } from '@simplewebauthn/types';
 // WebAuthn configuration
 const rpName = 'Listo';
 // Note: This runs on the server, so we use environment-based detection
-// For localhost development, we'll get the origin from the request
-// For production, we'll use the deployed domain
+// For localhost development, we use localhost
+// For production, we use the main production domain (not preview deployment URLs)
 const getConfig = (requestOrigin?: string) => {
-	// If we have a request origin, use it
+	// If we have a request origin, check if it's localhost
 	if (requestOrigin) {
 		const url = new URL(requestOrigin);
+		// For localhost, use localhost as RP ID
+		if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+			return {
+				rpID: 'localhost',
+				origin: requestOrigin
+			};
+		}
+		// For production (including preview deployments), always use the main production domain
+		// This ensures passkeys work across all deployments
 		return {
-			rpID: url.hostname,
-			origin: requestOrigin
+			rpID: 'listo.jonnyparris.club',
+			origin: `https://listo.jonnyparris.club`
 		};
 	}
 	// Default for development
