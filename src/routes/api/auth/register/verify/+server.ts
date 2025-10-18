@@ -24,11 +24,32 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		// Verify the registration response
 		const verification = await verifyRegistration(body, challenge, origin);
 
+		console.log('Full verification object:', JSON.stringify(verification, null, 2));
+
 		if (!verification.verified || !verification.registrationInfo) {
+			console.error('Verification failed or no registration info:', {
+				verified: verification.verified,
+				hasRegistrationInfo: !!verification.registrationInfo
+			});
 			return json({ error: 'Verification failed' }, { status: 400 });
 		}
 
-		const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+		// Extract credential data from the nested structure
+		const { credential } = verification.registrationInfo;
+		const credentialID = credential.id;
+		const credentialPublicKey = credential.publicKey;
+		const counter = credential.counter;
+
+		// Log raw registration info for debugging
+		console.log('Raw registration info:', {
+			credentialID: credentialID,
+			credentialIDType: typeof credentialID,
+			credentialIDLength: credentialID?.length || credentialID?.byteLength,
+			credentialPublicKeyType: typeof credentialPublicKey,
+			credentialPublicKeyLength: credentialPublicKey?.length || credentialPublicKey?.byteLength,
+			counter: counter,
+			counterType: typeof counter
+		});
 
 		// Ensure username is null if undefined or empty string (D1 doesn't accept undefined)
 		const username = userData.username && userData.username.trim() ? userData.username.trim() : null;
@@ -43,8 +64,13 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			.run();
 
 		// Store credential
-		const encodedCredentialID = base64url.encode(credentialID);
-		const encodedPublicKey = base64url.encode(credentialPublicKey);
+		// credentialID is already a base64url string in the new API
+		const encodedCredentialID = typeof credentialID === 'string' ? credentialID : base64url.encode(credentialID);
+		// credentialPublicKey is a Uint8Array-like object, need to convert it
+		const publicKeyUint8 = credentialPublicKey instanceof Uint8Array
+			? credentialPublicKey
+			: new Uint8Array(Object.values(credentialPublicKey));
+		const encodedPublicKey = base64url.encode(publicKeyUint8);
 
 		console.log('Creating credential with:', {
 			credentialID: encodedCredentialID,
@@ -81,9 +107,27 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		return json({ success: true, userId: userData.id });
 	} catch (error) {
 		console.error('Registration error:', error);
-		return json(
-			{ error: error instanceof Error ? error.message : 'Registration failed' },
-			{ status: 500 }
-		);
+
+		// Check for specific error types
+		let errorMessage = 'Registration failed';
+		let statusCode = 500;
+
+		if (error instanceof Error) {
+			// Handle duplicate user/credential errors
+			if (error.message.includes('UNIQUE constraint failed: users.username')) {
+				errorMessage = 'Username already taken. Please choose a different username.';
+				statusCode = 409;
+			} else if (error.message.includes('UNIQUE constraint failed: credentials.id')) {
+				errorMessage = 'It looks like you already have an account! Please use the "Sign In" button to access your existing account.';
+				statusCode = 409;
+			} else if (error.message.includes('UNIQUE constraint failed: users.id')) {
+				errorMessage = 'It looks like you already have an account! Please use the "Sign In" button to access your existing account.';
+				statusCode = 409;
+			} else {
+				errorMessage = error.message;
+			}
+		}
+
+		return json({ error: errorMessage }, { status: statusCode });
 	}
 };
