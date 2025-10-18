@@ -37,6 +37,8 @@
 	let formDescription = $state('');
 	let formSource = $state('');
 	let formMetadata = $state<any>(undefined);
+	let bulkMode = $state(false);
+	let bulkTitles = $state('');
 
 	// Review form state
 	let reviewText = $state('');
@@ -348,6 +350,38 @@
 	}
 
 	async function saveRecommendation() {
+		// Handle bulk mode
+		if (bulkMode) {
+			const titles = bulkTitles.split('\n').filter(t => t.trim());
+			if (titles.length === 0) {
+				toastStore.error('Please enter at least one title');
+				return;
+			}
+
+			// Save all titles in the same category
+			let count = 0;
+			for (const title of titles) {
+				const recommendation: LocalRecommendation = {
+					id: crypto.randomUUID(),
+					user_id: userId,
+					category: formCategory,
+					title: title.trim(),
+					description: formDescription.trim() || undefined,
+					source: formSource.trim() || undefined,
+					created_at: Math.floor(Date.now() / 1000),
+					updated_at: Math.floor(Date.now() / 1000),
+					synced: false
+				};
+				await dbOperations.addRecommendation(recommendation);
+				count++;
+			}
+
+			await loadRecommendations();
+			toastStore.success(`Added ${count} recommendations`);
+			resetForm();
+			return;
+		}
+
 		// Validate title
 		if (!formTitle.trim()) {
 			toastStore.error('Please enter a title');
@@ -452,6 +486,8 @@
 		formSource = '';
 		formCategory = 'movie';
 		formMetadata = undefined;
+		bulkMode = false;
+		bulkTitles = '';
 		showAddForm = false;
 		editingId = null;
 	}
@@ -811,6 +847,19 @@
 		searchSimilarRecommendations(formTitle);
 	});
 
+	// Scroll selected category into view when form opens or category changes
+	$effect(() => {
+		if (showAddForm && formCategory) {
+			// Small delay to ensure DOM is rendered
+			setTimeout(() => {
+				const selectedButton = document.querySelector(`button[data-category="${formCategory}"]`);
+				if (selectedButton) {
+					selectedButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+				}
+			}, 100);
+		}
+	});
+
 	// Sign out functionality
 	async function handleSignOut() {
 		confirmModal = {
@@ -1085,9 +1134,21 @@
 					<!-- Header -->
 					<div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 sm:px-6">
 						<div class="flex items-center justify-between max-w-2xl mx-auto">
-							<h2 class="text-xl sm:text-2xl font-semibold text-text dark:text-white">
-								{editingId ? 'Edit Recommendation' : 'Add Recommendation'}
-							</h2>
+							<div class="flex items-center gap-3">
+								<h2 class="text-xl sm:text-2xl font-semibold text-text dark:text-white">
+									{editingId ? 'Edit Recommendation' : bulkMode ? 'Add Multiple' : 'Add Recommendation'}
+								</h2>
+								{#if !editingId}
+									<button
+										type="button"
+										onclick={() => bulkMode = !bulkMode}
+										class="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+										title="Toggle bulk add mode"
+									>
+										{bulkMode ? 'Single' : 'Bulk'}
+									</button>
+								{/if}
+							</div>
 							<button
 								onclick={() => resetForm()}
 								class="p-2 text-text-muted hover:text-text dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -1143,6 +1204,7 @@
 												{#each categories as cat}
 													<button
 														type="button"
+														data-category={cat}
 														onclick={() => formCategory = cat}
 														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-md scale-105' : 'bg-gray-100 dark:bg-gray-800 text-text dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'}"
 													>
@@ -1157,27 +1219,44 @@
 									</div>
 
 									<div>
-										<label for="title" class="mb-2 block text-sm font-medium text-text dark:text-white">
-											Title
-										</label>
-										{#if formCategory === 'movie' || formCategory === 'show'}
-											<TMDBAutocomplete
-												bind:value={formTitle}
-												category={formCategory}
-												onSelect={handleEnrichmentSelect}
-												placeholder={`Search for a ${formCategory}...`}
+										{#if bulkMode}
+											<label for="bulk-titles" class="mb-2 block text-sm font-medium text-text dark:text-white">
+												Titles (one per line)
+											</label>
+											<textarea
+												id="bulk-titles"
+												bind:value={bulkTitles}
+												placeholder="Enter multiple titles, one per line...&#10;Example:&#10;The Matrix&#10;Inception&#10;Interstellar"
+												class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
+												rows="10"
 												autofocus
-											/>
-										{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
-											<EnrichmentAutocomplete
-												bind:value={formTitle}
-												category={formCategory}
-												onSelect={handleEnrichmentSelect}
-												placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
-												autofocus
-											/>
+											></textarea>
+											<p class="mt-1 text-xs text-text-muted">
+												Enter one title per line. They'll all be saved in the {formatCategory(formCategory)} category.
+											</p>
 										{:else}
-											<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus />
+											<label for="title" class="mb-2 block text-sm font-medium text-text dark:text-white">
+												Title
+											</label>
+											{#if formCategory === 'movie' || formCategory === 'show'}
+												<TMDBAutocomplete
+													bind:value={formTitle}
+													category={formCategory}
+													onSelect={handleEnrichmentSelect}
+													placeholder={`Search for a ${formCategory}...`}
+													autofocus
+												/>
+											{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
+												<EnrichmentAutocomplete
+													bind:value={formTitle}
+													category={formCategory}
+													onSelect={handleEnrichmentSelect}
+													placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
+													autofocus
+												/>
+											{:else}
+												<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus />
+											{/if}
 										{/if}
 
 										<!-- Category matches subtotal -->
