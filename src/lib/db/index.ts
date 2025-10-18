@@ -8,7 +8,7 @@ export class ListoDatabase extends Dexie {
 	constructor() {
 		super('ListoDB');
 		this.version(1).stores({
-			recommendations: 'id, user_id, category, updated_at, synced, deleted_at, completed_at'
+			recommendations: 'id, user_id, category, updated_at, synced, deleted_at, completed_at, [user_id+synced], [user_id+category]'
 		});
 	}
 }

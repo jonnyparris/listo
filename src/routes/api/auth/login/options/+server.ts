@@ -17,7 +17,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		// allowCredentials in the options, enabling discoverable credential flow
 
 		// Generate authentication options for discoverable credentials
-		const options = await generateAuthenticationOptionsForUser(origin);
+		const options = await generateAuthenticationOptionsForUser(undefined, origin);
 
 		// Store the challenge in a cookie for verification
 		cookies.set('auth-challenge', options.challenge, {
