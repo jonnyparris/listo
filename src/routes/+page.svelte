@@ -1633,8 +1633,8 @@
 												<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 											{/if}
 											<div class="flex gap-3 mt-2 text-xs">
-												{#if rec.metadata?.rating}
-													<span class="text-text-muted">TMDB: {rec.metadata.rating}/10</span>
+												{#if rec.metadata?.imdb_rating}
+													<span class="text-text-muted">TMDB: {rec.metadata.imdb_rating.toFixed(1)}/10</span>
 												{/if}
 												{#if rec.metadata?.rt_score}
 													<span class="text-text-muted">🍅 {rec.metadata.rt_score}%</span>
@@ -1859,8 +1859,8 @@
 											<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 										{/if}
 										<div class="flex gap-3 mt-2 text-xs">
-											{#if rec.metadata?.rating}
-												<span class="text-text-muted">TMDB: {rec.metadata.rating}/10</span>
+											{#if rec.metadata?.imdb_rating}
+												<span class="text-text-muted">TMDB: {rec.metadata.imdb_rating.toFixed(1)}/10</span>
 											{/if}
 											{#if rec.metadata?.rt_score}
 												<span class="text-text-muted">🍅 {rec.metadata.rt_score}%</span>

@@ -78,9 +78,13 @@
 				`/api/enrichment/enrich?id=${suggestion.id}&category=${category}`
 			);
 			if (response.ok) {
-			const enrichedData = await response.json();
-			// Pass the suggestion title along with enriched metadata
-			onSelect?.(suggestion);
+				const enrichedMetadata = await response.json();
+				// Merge enriched metadata with suggestion
+				const enrichedSuggestion = {
+					...suggestion,
+					metadata: enrichedMetadata
+				};
+				onSelect?.(enrichedSuggestion);
 			} else {
 				// Fallback to basic suggestion
 				onSelect?.(suggestion);
