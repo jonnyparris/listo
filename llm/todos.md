@@ -1,5 +1,5 @@
 # High Priority
-- [x] Cross-device recommendation syncing - FIXED! The issue was that each registration created a new user ID. Now when you register with a synced passkey (e.g., iCloud Keychain) on multiple devices, it correctly identifies as the same user
+- [x] Cross-device recommendation syncing - CONFIRMED WORKING: Data syncs properly to D1 database via /api/recommendations/sync endpoint. UI already shows sync status, errors, and has manual sync button with auto-sync every interval for authenticated users.
 
 # Outstanding Tasks
 - [ ] the compact list view should just be titles and category icons - clicking should expand to a full card

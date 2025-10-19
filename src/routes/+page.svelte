@@ -2093,29 +2093,41 @@
 										}
 									}}
 								>
-									{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
-										<img
-											src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
-											alt={rec.title}
-											class="{layoutMode === 'grid' ? 'w-full h-48' : layoutMode === 'compact' ? 'h-16 w-12' : 'h-32 w-24'} rounded object-cover flex-shrink-0"
-											loading="lazy"
-											decoding="async"
-										/>
-									{/if}
-									<div class="flex-1 min-w-0 {layoutMode === 'grid' ? 'w-full' : ''}">
-										<div class="mb-1 flex items-center gap-2 flex-wrap">
-											<span class="rounded-full bg-primary/20 px-2 py-1 text-sm" title={formatCategory(rec.category)}>
+									{#if layoutMode === 'compact' && expandedCardId !== rec.id}
+										<!-- Compact collapsed view: only icon and title -->
+										<div class="flex items-center gap-2 flex-1">
+											<span class="rounded-full bg-primary/20 px-2 py-1 text-sm flex-shrink-0" title={formatCategory(rec.category)}>
 												{getCategoryIcon(rec.category)}
 											</span>
-											{#if rec.metadata?.year && layoutMode !== 'compact'}
-												<span class="text-xs text-text-muted">
-													{rec.metadata.year}
-												</span>
-											{/if}
+											<h3 class="text-sm font-semibold text-text dark:text-white truncate">
+												{rec.title}
+											</h3>
 										</div>
-										<h3 class="mb-1 {layoutMode === 'compact' ? 'text-sm' : 'text-lg'} font-semibold text-text dark:text-white">
-											{rec.title}
-										</h3>
+									{:else}
+										<!-- Full card view (grid, normal, or compact+expanded) -->
+										{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
+											<img
+												src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
+												alt={rec.title}
+												class="{layoutMode === 'grid' ? 'w-full h-48' : layoutMode === 'compact' ? 'h-16 w-12' : 'h-32 w-24'} rounded object-cover flex-shrink-0"
+												loading="lazy"
+												decoding="async"
+											/>
+										{/if}
+										<div class="flex-1 min-w-0 {layoutMode === 'grid' ? 'w-full' : ''}">
+											<div class="mb-1 flex items-center gap-2 flex-wrap">
+												<span class="rounded-full bg-primary/20 px-2 py-1 text-sm" title={formatCategory(rec.category)}>
+													{getCategoryIcon(rec.category)}
+												</span>
+												{#if rec.metadata?.year}
+													<span class="text-xs text-text-muted">
+														{rec.metadata.year}
+													</span>
+												{/if}
+											</div>
+											<h3 class="mb-1 text-lg font-semibold text-text dark:text-white">
+												{rec.title}
+											</h3>
 										{#if rec.source && layoutMode !== 'compact'}
 											<div class="mb-2 text-xs text-text-muted flex items-center gap-1">
 												<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2284,6 +2296,7 @@
 											</button>
 										{/if}
 									</div>
+									{/if}
 								</div>
 							{/if}
 						</Card>
