@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createEnrichmentService } from '$lib/services/enrichment';
-import { TMDB_API_KEY, YOUTUBE_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from '$env/static/private';
+import { TMDB_API_KEY, YOUTUBE_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, OMDB_API_KEY } from '$env/static/private';
 
 export const GET: RequestHandler = async ({ url, platform }) => {
 	const query = url.searchParams.get('query');
@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 	const youtubeKey = platform?.env?.YOUTUBE_API_KEY || YOUTUBE_API_KEY || '';
 	const spotifyClientId = platform?.env?.SPOTIFY_CLIENT_ID || SPOTIFY_CLIENT_ID || '';
 	const spotifyClientSecret = platform?.env?.SPOTIFY_CLIENT_SECRET || SPOTIFY_CLIENT_SECRET || '';
-	const omdbKey = ((platform?.env as any)?.OMDB_API_KEY as string) || '';
+	const omdbKey = platform?.env?.OMDB_API_KEY || OMDB_API_KEY || '';
 
 	const enrichmentService = createEnrichmentService({
 		tmdb: tmdbKey,
