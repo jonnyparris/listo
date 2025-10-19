@@ -123,7 +123,7 @@ export class TMDBPlugin implements EnrichmentPlugin {
 				try {
 					const imdbId = data.external_ids?.imdb_id;
 					if (this.omdbApiKey && imdbId) {
-						const omdbResp = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${this.omdbApiKey}`);
+						const omdbResp = await fetch(`https://omdbapi.com/?apikey=${this.omdbApiKey}&i=${imdbId}`);
 						if (omdbResp.ok) {
 							const omdb = await omdbResp.json();
 							if (Array.isArray(omdb.Ratings)) {
@@ -160,7 +160,7 @@ export class TMDBPlugin implements EnrichmentPlugin {
 				try {
 					const imdbId = data.external_ids?.imdb_id;
 					if (this.omdbApiKey && imdbId) {
-						const omdbResp = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${this.omdbApiKey}`);
+						const omdbResp = await fetch(`https://www.omdbapi.com/?apikey=${this.omdbApiKey}&i=${imdbId}`);
 						if (omdbResp.ok) {
 							const omdb = await omdbResp.json();
 							if (Array.isArray(omdb.Ratings)) {
