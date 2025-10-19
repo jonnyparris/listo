@@ -1,4 +1,4 @@
-- [] the confirm button for signout should say signout not delete
-- [] Autosuggest for Series seems broken - TypeError: can't access property "rawQuery", this.query is undefined
-- [] When I create a recommendation without an account and then sign in and accept the prompt to save it to my account I get a message that the migration failed. TypeError: can't access property "rawQuery", this.query is undefined
-- [] For the new recommendation form, wrap the list of categories so that all are visible at the same time. When one is selected, shrink the others so they're much smaller.
+- [x] the confirm button for signout should say signout not delete
+- [x] Autosuggest for Series seems broken - TypeError: can't access property "rawQuery", this.query is undefined
+- [x] When I create a recommendation without an account and then sign in and accept the prompt to save it to my account I get a message that the migration failed. TypeError: can't access property "rawQuery", this.query is undefined
+- [x] For the new recommendation form, wrap the list of categories so that all are visible at the same time. When one is selected, shrink the others so they're much smaller.
