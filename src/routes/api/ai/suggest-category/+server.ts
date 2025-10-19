@@ -12,7 +12,6 @@ const VALID_CATEGORIES: Category[] = [
 	'genre',
 	'restaurant',
 	'recipe',
-	'cuisine',
 	'activity',
 	'video-game',
 	'board-game',
@@ -46,7 +45,6 @@ Valid categories:
 - genre: For music genres
 - restaurant: For restaurants and dining places
 - recipe: For cooking recipes
-- cuisine: For types of cuisine
 - activity: For activities, hobbies, things to do
 - video-game: For video games
 - board-game: For board games, card games, tabletop games

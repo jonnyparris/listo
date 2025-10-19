@@ -31,7 +31,6 @@
 		'genre',
 		'restaurant',
 		'recipe',
-		'cuisine',
 		'activity',
 		'video-game',
 		'board-game',

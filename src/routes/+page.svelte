@@ -109,7 +109,6 @@
 		'genre',
 		'restaurant',
 		'recipe',
-		'cuisine',
 		'activity',
 		'video-game',
 		'board-game',
@@ -544,6 +543,18 @@
 			formDescription = suggestion.metadata.overview;
 		} else if (suggestion.metadata?.description && !formDescription) {
 			formDescription = suggestion.metadata.description;
+		} else if (suggestion.metadata?.artist && !formDescription) {
+			// For songs, show artist and album info
+			const parts = [];
+			if (suggestion.metadata.artist) parts.push(`Artist: ${suggestion.metadata.artist}`);
+			if (suggestion.subtitle) parts.push(suggestion.subtitle);
+			if (suggestion.metadata.genres && suggestion.metadata.genres.length > 0) {
+				parts.push(`Genres: ${suggestion.metadata.genres.join(', ')}`);
+			}
+			formDescription = parts.join(' • ');
+		} else if (suggestion.metadata?.genres && suggestion.metadata.genres.length > 0 && !formDescription) {
+			// For artists, show genres
+			formDescription = `Genres: ${suggestion.metadata.genres.join(', ')}`;
 		}
 
 		// Ensure we have an image for the recommendation
@@ -1461,23 +1472,25 @@
 														</span>
 													{/if}
 												</label>
-												{#if formCategory === 'movie' || formCategory === 'show'}
-													<TMDBAutocomplete
-														bind:value={formTitle}
-														category={formCategory}
-														onSelect={handleEnrichmentSelect}
-														placeholder={`Search for a ${formCategory}...`}
-															/>
-												{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
-													<EnrichmentAutocomplete
-														bind:value={formTitle}
-														category={formCategory}
-														onSelect={handleEnrichmentSelect}
-														placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
-															/>
-												{:else}
-													<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
-												{/if}
+											{#if formCategory === 'movie' || formCategory === 'show'}
+												<TMDBAutocomplete
+													bind:value={formTitle}
+													category={formCategory}
+													onSelect={handleEnrichmentSelect}
+													placeholder={`Search for a ${formCategory}...`}
+													autofocus={true}
+														/>
+											{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
+												<EnrichmentAutocomplete
+													bind:value={formTitle}
+													category={formCategory}
+													onSelect={handleEnrichmentSelect}
+													placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
+													autofocus={true}
+														/>
+											{:else}
+												<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus={true} />
+											{/if}
 											</div>
 										{/if}
 
@@ -1720,9 +1733,9 @@
 												{/each}
 											</div>
 										{/if}
-										{#if rec.metadata?.spotify_url || rec.metadata?.youtube_url}
-											<div class="mb-2 flex gap-2 items-center">
-												{#if rec.metadata?.spotify_url}
+									{#if rec.metadata?.spotify_url || rec.metadata?.youtube_url || rec.category === 'restaurant'}
+										<div class="mb-2 flex gap-2 items-center flex-wrap">
+											{#if rec.metadata?.spotify_url}
 													<a
 														href={rec.metadata.spotify_url}
 														target="_blank"
@@ -1747,12 +1760,27 @@
 														<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 															<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
 														</svg>
-														Watch
-													</a>
-												{/if}
-											</div>
+												Watch
+											</a>
 										{/if}
-										{#if rec.description}
+										{#if rec.category === 'restaurant'}
+											<a
+												href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.title)}`}
+												target="_blank"
+												rel="noopener noreferrer"
+												class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+												onclick={(e) => e.stopPropagation()}
+											>
+												<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+													<circle cx="12" cy="10" r="3"></circle>
+												</svg>
+												Search in Maps
+											</a>
+										{/if}
+									</div>
+								{/if}
+								{#if rec.description}
 											<p class="text-sm text-text-muted {expandedCardId === rec.id ? '' : 'line-clamp-3'}">
 												{rec.description}
 											</p>

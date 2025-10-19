@@ -1,8 +1,7 @@
-- [x] the "not synced" icon no longer shows after a successful sync
-- [x] shows should be the default category
-- [x] when you change category, autosuggestions show for the new category
-- [x] make the header logo take up less space
-- [] should the top nav menu be collapsed into a burger menu on mobile / small screens?
-- [x] saved shows and movies include links to TMDB and Rotten Tomatoes search
-- [x] include a rotten tomatoes rating for movies and shows (when OMDb key configured)
-- [x] Sync error resolved by avoiding undefined in IndexedDB updates
+- [x] Rotten Tomatoes rating is saved in metadata via OMDb integration
+- [x] Restaurants have Google Maps search link on both active and completed cards
+- [x] Fixed "not synced" icon persisting - removed undefined from bulkUpdate
+- [x] Title input now autofocuses in add form
+- [x] Cuisine category removed from app
+- [x] Enhanced artist/song data (artist, genres, album) saved in description for music items
+- [x] Previously saved sources are suggested via datalist autocomplete
