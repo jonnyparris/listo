@@ -54,15 +54,6 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		// Ensure username is null if undefined or empty string (D1 doesn't accept undefined)
 		const username = userData.username && userData.username.trim() ? userData.username.trim() : null;
 
-		// Create user in database
-		console.log('Creating user with:', { id: userData.id, username, type: typeof username });
-
-		await platform.env.DB.prepare(
-			'INSERT INTO users (id, username, created_at, updated_at) VALUES (?, ?, unixepoch(), unixepoch())'
-		)
-			.bind(userData.id, username)
-			.run();
-
 		// Store credential
 		// credentialID is already a base64url string in the new API
 		const encodedCredentialID = typeof credentialID === 'string' ? credentialID : base64url.encode(credentialID);
@@ -72,31 +63,58 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			: new Uint8Array(Object.values(credentialPublicKey));
 		const encodedPublicKey = base64url.encode(publicKeyUint8);
 
-		console.log('Creating credential with:', {
-			credentialID: encodedCredentialID,
-			userId: userData.id,
-			counter,
-			counterType: typeof counter
-		});
-
-		await platform.env.DB.prepare(
-			`INSERT INTO credentials (id, user_id, public_key, counter, created_at)
-			 VALUES (?, ?, ?, ?, unixepoch())`
+		// Check if this credential already exists (synced passkey used on another device)
+		const existingCredential = await platform.env.DB.prepare(
+			'SELECT user_id FROM credentials WHERE id = ?'
 		)
-			.bind(
-				encodedCredentialID,
-				userData.id,
-				encodedPublicKey,
-				counter ?? 0  // Ensure counter is never undefined
+			.bind(encodedCredentialID)
+			.first();
+
+		let finalUserId: string;
+
+		if (existingCredential) {
+			// This passkey was already registered on another device
+			// Use the existing user_id to maintain sync across devices
+			finalUserId = existingCredential.user_id as string;
+			console.log('Credential already exists, using existing user_id:', finalUserId);
+		} else {
+			// New credential - create user and credential as normal
+			finalUserId = userData.id;
+
+			console.log('Creating user with:', { id: finalUserId, username, type: typeof username });
+
+			await platform.env.DB.prepare(
+				'INSERT INTO users (id, username, created_at, updated_at) VALUES (?, ?, unixepoch(), unixepoch())'
 			)
-			.run();
+				.bind(finalUserId, username)
+				.run();
+
+			console.log('Creating credential with:', {
+				credentialID: encodedCredentialID,
+				userId: finalUserId,
+				counter,
+				counterType: typeof counter
+			});
+
+			await platform.env.DB.prepare(
+				`INSERT INTO credentials (id, user_id, public_key, counter, created_at)
+				 VALUES (?, ?, ?, ?, unixepoch())`
+			)
+				.bind(
+					encodedCredentialID,
+					finalUserId,
+					encodedPublicKey,
+					counter ?? 0  // Ensure counter is never undefined
+				)
+				.run();
+		}
 
 		// Clear registration cookies
 		cookies.delete('reg-challenge', { path: '/' });
 		cookies.delete('reg-user', { path: '/' });
 
 		// Set session cookie
-		cookies.set('user-id', userData.id, {
+		cookies.set('user-id', finalUserId, {
 			httpOnly: true,
 			secure: true,
 			sameSite: 'strict',
@@ -104,7 +122,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			path: '/'
 		});
 
-		return json({ success: true, userId: userData.id });
+		return json({ success: true, userId: finalUserId });
 	} catch (error) {
 		console.error('Registration error:', error);
 
