@@ -31,7 +31,7 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
-				serif: ['Cormorant Garamond', 'Georgia', 'serif']
+				serif: ['Fraunces', 'Libre Baskerville', 'Georgia', 'serif']
 			},
 			letterSpacing: {
 				'wordmark': '0.02em'

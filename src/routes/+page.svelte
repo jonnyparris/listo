@@ -10,6 +10,7 @@
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import InstallPrompt from '$lib/components/InstallPrompt.svelte';
 	import KeyboardShortcutsModal from '$lib/components/KeyboardShortcutsModal.svelte';
+	import MigrationPrompt from '$lib/components/MigrationPrompt.svelte';
 	import { dbOperations } from '$lib/db';
 	import { syncService } from '$lib/services/sync';
 	import { authService } from '$lib/services/auth';
@@ -1920,34 +1921,12 @@
 	<InstallPrompt />
 
 	<!-- Migration Prompt -->
-	{#if showMigrationPrompt}
-		<div
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="migration-title"
-			class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-		>
-			<div
-				role="document"
-				class="bg-white dark:bg-surface-dark rounded-2xl shadow-xl max-w-md w-full p-6"
-			>
-				<h2 id="migration-title" class="text-xl font-semibold text-text dark:text-white mb-3">
-					Save Your Recommendations?
-				</h2>
-				<p class="text-text-muted mb-6">
-					You have {sessionRecommendations.length} recommendation{sessionRecommendations.length === 1 ? '' : 's'} from before you signed in. Would you like to save {sessionRecommendations.length === 1 ? 'it' : 'them'} to your account?
-				</p>
-				<div class="flex gap-3">
-					<Button onclick={migrateSessionRecommendations} variant="primary" class="flex-1">
-						Save to Account
-					</Button>
-					<Button variant="ghost" onclick={dismissMigrationPrompt}>
-						Discard
-					</Button>
-				</div>
-			</div>
-		</div>
-	{/if}
+	<MigrationPrompt
+		show={showMigrationPrompt}
+		count={sessionRecommendations.length}
+		onMigrate={migrateSessionRecommendations}
+		onDismiss={dismissMigrationPrompt}
+	/>
 
 	<!-- Footer -->
 	<footer class="mt-20 pt-8 pb-8 border-t border-black/5 dark:border-white/5">
