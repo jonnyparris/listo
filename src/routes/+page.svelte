@@ -1198,7 +1198,7 @@
 	
 	<div class="mx-auto max-w-4xl px-4 py-8 pb-20 {isScrolled ? 'pt-20 md:pt-8' : ''}">
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
-		<div class="sticky top-0 z-40 bg-background-light dark:bg-background-dark py-4 -mt-4 mb-4 sm:static sm:py-0 sm:mt-0">
+		<div class="sticky top-0 z-40 bg-background-light dark:bg-background-dark py-4 mb-4 md:static md:py-0 md:mb-0">
 			<div class="flex items-center justify-end gap-2">
 				<!-- Desktop: show all controls -->
 				<div class="hidden md:flex items-center gap-2">
@@ -1480,12 +1480,12 @@
 		{/if}
 
 		<!-- Header -->
-		<header class="mb-8 text-center flex justify-center">
+		<header class="mb-4 text-center flex justify-center">
 			<a href="/" class="hover:opacity-80 transition-opacity">
 					<img
 						src="/Listo_Logo_IntentionalChill.svg"
 						alt="Listo - intentional chill"
-						class="w-full max-w-[160px] sm:max-w-[200px] md:max-w-[240px] h-auto text-text dark:text-white"
+						class="w-full max-w-[200px] sm:max-w-[260px] md:max-w-[300px] h-auto text-text dark:text-white"
 					/>
 
 			</a>
