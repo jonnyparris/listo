@@ -171,6 +171,19 @@
 
 			await loadRecommendations();
 
+			// For authenticated users, sync with server to get latest data
+			if (user.authenticated) {
+				// Do an initial sync in the background to pull server data
+				syncService.pullFromServer(userId).then(async (result) => {
+					if (result.success) {
+						// Reload recommendations to show server data
+						await loadRecommendations();
+					} else {
+						console.warn('Initial sync failed:', result.error);
+					}
+				});
+			}
+
 			// Track if this session has recommendations (for future migration)
 			if (!user.authenticated && recommendations.length > 0) {
 				localStorage.setItem('had_session_recommendations', 'true');
@@ -178,7 +191,24 @@
 			}
 		}
 
-		setup();
+		setup().then(() => {
+			// Periodic background sync for authenticated users (every 30 seconds)
+			if (isAuthenticated) {
+				const syncInterval = setInterval(async () => {
+					if (isAuthenticated && !syncing) {
+						const result = await syncService.fullSync(userId);
+						if (result.success) {
+							await loadRecommendations();
+						}
+					}
+				}, 30000); // 30 seconds
+
+				// Cleanup on unmount
+				return () => {
+					if (syncInterval) clearInterval(syncInterval);
+				};
+			}
+		});
 
 		// Global keyboard shortcuts
 		const handleKeydown = (e: KeyboardEvent) => {
@@ -313,6 +343,15 @@
 		if (!isAuthenticated && (recommendations.length > 0 || completedRecs.length > 0)) {
 			localStorage.setItem('had_session_recommendations', 'true');
 			localStorage.setItem('previous_session_id', userId);
+		}
+	}
+
+	// Auto-sync helper for authenticated users (non-blocking)
+	async function autoSync() {
+		if (isAuthenticated && !syncing) {
+			syncService.syncToServer(userId).catch((error) => {
+				console.warn('Auto-sync failed:', error);
+			});
 		}
 	}
 
@@ -481,6 +520,7 @@
 			await loadRecommendations();
 			toastStore.success(`Added ${count} recommendations`);
 			resetForm();
+			autoSync(); // Sync in background
 			return;
 		}
 
@@ -524,6 +564,7 @@
 
 		await loadRecommendations();
 		resetForm();
+		autoSync(); // Sync in background
 	}
 
 	function startEdit(rec: LocalRecommendation) {
@@ -546,6 +587,7 @@
 				await loadRecommendations();
 				confirmModal = null;
 				toastStore.success('Recommendation deleted');
+				autoSync(); // Sync in background
 			}
 		};
 	}
@@ -570,6 +612,7 @@
 		completingId = null;
 		reviewText = '';
 		reviewRating = 0;
+		autoSync(); // Sync in background
 	}
 
 	async function uncompleteRecommendation(id: string) {
@@ -580,6 +623,7 @@
 			synced: false
 		});
 		await loadRecommendations();
+		autoSync(); // Sync in background
 	}
 
 	function resetForm() {
