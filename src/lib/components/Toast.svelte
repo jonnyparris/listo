@@ -4,7 +4,7 @@
 
 	interface Props {
 		message: string;
-		type?: 'success' | 'error' | 'info';
+		type?: 'success' | 'error' | 'info' | 'warning';
 		duration?: number;
 		onClose?: () => void;
 	}
@@ -30,13 +30,15 @@
 	const bgColors = {
 		success: 'bg-primary/90 dark:bg-primary/80',
 		error: 'bg-red-500/90 dark:bg-red-600/80',
-		info: 'bg-gray-800/90 dark:bg-gray-700/80'
+		info: 'bg-gray-800/90 dark:bg-gray-700/80',
+		warning: 'bg-amber-500/90 dark:bg-amber-600/80'
 	};
 
 	const icons = {
 		success: '✓',
 		error: '✕',
-		info: 'ℹ'
+		info: 'ℹ',
+		warning: '⚠'
 	};
 </script>
 

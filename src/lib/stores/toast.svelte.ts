@@ -1,4 +1,4 @@
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
 	id: string;
@@ -29,6 +29,10 @@ class ToastStore {
 
 	info(message: string, duration?: number) {
 		return this.show(message, 'info', duration);
+	}
+
+	warning(message: string, duration?: number) {
+		return this.show(message, 'warning', duration);
 	}
 
 	dismiss(id: string) {

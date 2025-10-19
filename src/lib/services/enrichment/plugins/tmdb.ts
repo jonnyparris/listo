@@ -1,9 +1,9 @@
-import type { Category, MovieMetadata, ShowMetadata } from '$lib/types';
+import type { Category, MovieMetadata, SeriesMetadata } from '$lib/types';
 import type { EnrichmentPlugin, EnrichmentResult, SearchSuggestion } from '../types';
 
 export class TMDBPlugin implements EnrichmentPlugin {
 	name = 'TMDB';
-	supportedCategories: Category[] = ['movie', 'show'];
+	supportedCategories: Category[] = ['movie', 'series'];
 
 	private apiKey: string;
 	private baseUrl = 'https://api.themoviedb.org/3';
@@ -146,8 +146,8 @@ export class TMDBPlugin implements EnrichmentPlugin {
 					metadata
 				};
 			} else {
-				const metadata: ShowMetadata = {
-					type: 'show',
+				const metadata: SeriesMetadata = {
+					type: 'series',
 					tmdb_id: data.id,
 					poster_url: data.poster_path ? `${this.imageBaseUrl}${data.poster_path}` : undefined,
 					imdb_rating: data.vote_average,

@@ -47,7 +47,7 @@
 
 	// Form state
 	let formTitle = $state('');
-	let formCategory = $state<Category>('show');
+	let formCategory = $state<Category>('series');
 	let formDescription = $state('');
 	let formSource = $state('');
 	let formMetadata = $state<any>(undefined);
@@ -115,8 +115,8 @@
 	});
 
 	const categories: Category[] = [
+		'series',
 		'movie',
-		'show',
 		'youtube',
 		'podcast',
 		'artist',
@@ -341,11 +341,26 @@
 
 			await loadRecommendations();
 			showMigrationPrompt = false;
-			toastStore.success(`Migrated ${sessionRecommendations.length} recommendations to your account`);
-			
-			// Trigger sync to save to server
+
+			// Trigger sync to save to server (but don't let sync errors override migration success)
 			if (isAuthenticated) {
-				await handleSync();
+				try {
+					const result = await syncService.fullSync(userId);
+					if (result.success) {
+						toastStore.success(`Migrated and synced ${sessionRecommendations.length} recommendations`);
+						await loadRecommendations(); // Reload to reflect synced state
+					} else {
+						// Migration succeeded but sync failed - show partial success message
+						toastStore.warning(`Migrated ${sessionRecommendations.length} recommendations. Sync will retry automatically.`);
+						console.warn('Migration succeeded but sync failed:', result.error);
+					}
+				} catch (syncError) {
+					// Migration succeeded but sync threw error
+					toastStore.warning(`Migrated ${sessionRecommendations.length} recommendations. Sync will retry automatically.`);
+					console.warn('Migration succeeded but sync error:', syncError);
+				}
+			} else {
+				toastStore.success(`Migrated ${sessionRecommendations.length} recommendations to your account`);
 			}
 		} catch (error) {
 			console.error('Migration failed:', error);
@@ -570,7 +585,7 @@
 		formTitle = '';
 		formDescription = '';
 		formSource = '';
-		formCategory = 'show';
+		formCategory = 'series';
 		formMetadata = undefined;
 		bulkMode = false;
 		bulkTitles = '';
@@ -587,8 +602,8 @@
 
 	function getCategoryIcon(cat: Category): string {
 		const icons: Record<Category, string> = {
+			'series': '📺',
 			'movie': '🎬',
-			'show': '📺',
 			'youtube': '📹',
 			'podcast': '🎙️',
 			'artist': '🎤',
@@ -604,6 +619,27 @@
 			'quote': '💭'
 		};
 		return icons[cat] || '📌';
+	}
+
+	function getCategoryColor(cat: Category): string {
+		const colors: Record<Category, string> = {
+			'series': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700',
+			'movie': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700',
+			'youtube': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700',
+			'podcast': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700',
+			'artist': 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-700',
+			'song': 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-200 dark:border-fuchsia-700',
+			'genre': 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700',
+			'restaurant': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700',
+			'recipe': 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700',
+			'activity': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700',
+			'video-game': 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700',
+			'board-game': 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700',
+			'book': 'bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 border-lime-200 dark:border-lime-700',
+			'graphic-novel': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700',
+			'quote': 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700'
+		};
+		return colors[cat] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700';
 	}
 
 	function formatDate(timestamp: number): string {
@@ -1423,7 +1459,7 @@
 		</div>
 
 		<!-- Category Subtotals -->
-		{#if selectedCategory === 'all' && (recommendations.length > 0 || completedRecs.length > 0)}
+		{#if recommendations.length > 0 || completedRecs.length > 0}
 			{@const categoryCounts = categories.reduce((acc, cat) => {
 				const activeCount = recommendations.filter(r => r.category === cat).length;
 				const completedCount = completedRecs.filter(r => r.category === cat).length;
@@ -1434,33 +1470,29 @@
 				return acc;
 			}, [] as Array<{ category: string; active: number; completed: number; total: number }>)}
 			{#if categoryCounts.length > 0}
-				<div class="mb-6 rounded-xl bg-white dark:bg-surface-dark shadow-sm border border-black/5 dark:border-white/5 overflow-hidden">
-					<button
-						onclick={() => categoriesCollapsed = !categoriesCollapsed}
-						class="w-full p-4 flex items-center justify-between hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
-					>
-						<h3 class="text-sm font-semibold text-text dark:text-white">By Category</h3>
-						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-200 {categoriesCollapsed ? '' : 'rotate-180'}">
-							<polyline points="6 9 12 15 18 9"></polyline>
-						</svg>
-					</button>
-					{#if !categoriesCollapsed}
-						<div class="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-											{#each categoryCounts as { category, active, completed, total }}
-												<button
-													onclick={() => handleCategoryChange(category as Category)}
-													class="text-left p-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-												>
-									<div class="text-xs font-medium text-text dark:text-white mb-1">
-										{formatCategory(category)}
-									</div>
-									<div class="text-xs text-text-muted">
-										{total} total · {active} active
-									</div>
-								</button>
-							{/each}
-						</div>
-					{/if}
+				<div class="mb-6">
+					<h3 class="text-sm font-semibold text-text dark:text-white mb-3 px-1">By Category</h3>
+					<div class="flex flex-wrap gap-2">
+						{#each categoryCounts as { category, active, completed, total }}
+							{@const isSelected = selectedCategory === category}
+							<button
+								onclick={() => handleCategoryChange(category as Category)}
+								class="
+									{getCategoryColor(category as Category)}
+									border rounded-full
+									transition-all duration-300 ease-out
+									hover:scale-105 hover:shadow-md
+									{isSelected ? 'px-4 py-2 text-sm font-semibold shadow-md' : 'px-3 py-1.5 text-xs font-medium opacity-70 hover:opacity-100'}
+								"
+							>
+								<span class="mr-1.5">{getCategoryIcon(category as Category)}</span>
+								<span>{formatCategory(category)}</span>
+								{#if isSelected}
+									<span class="ml-2 opacity-75">{total} total · {active} active</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
 				</div>
 			{/if}
 		{/if}

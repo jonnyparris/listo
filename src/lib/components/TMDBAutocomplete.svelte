@@ -16,7 +16,7 @@
 		value = $bindable(''),
 		category,
 		onSelect,
-		placeholder = 'Search for a movie or show...',
+		placeholder = 'Search for a movie or series...',
 		autofocus = false,
 		onkeydown
 	}: Props = $props();
@@ -41,8 +41,8 @@
 			return;
 		}
 
-		// Only search for movie/show categories
-		if (!['movie', 'show'].includes(category)) {
+		// Only search for movie/series categories
+		if (!['movie', 'series'].includes(category)) {
 			return;
 		}
 
@@ -52,7 +52,7 @@
 	}
 
 	async function searchTMDB(query: string) {
-		if (!['movie', 'show'].includes(category)) {
+		if (!['movie', 'series'].includes(category)) {
 			return;
 		}
 
@@ -136,7 +136,7 @@
 
 	// Refresh suggestions when category changes
 	$effect(() => {
-		if (value.length >= 2 && ['movie','show'].includes(category)) {
+		if (value.length >= 2 && ['movie','series'].includes(category)) {
 			searchTMDB(value);
 			showSuggestions = true;
 		} else if (value.length < 2) {

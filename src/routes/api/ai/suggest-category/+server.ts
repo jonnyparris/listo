@@ -3,8 +3,8 @@ import type { RequestHandler } from './$types';
 import type { Category } from '$lib/types';
 
 const VALID_CATEGORIES: Category[] = [
+	'series',
 	'movie',
-	'show',
 	'youtube',
 	'podcast',
 	'artist',
@@ -36,8 +36,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		const prompt = `You are a helpful assistant that categorizes recommendations. Given a text input, determine which category it belongs to.
 
 Valid categories:
+- series: For TV shows, series, documentaries
 - movie: For films and movies
-- show: For TV shows, series, documentaries
 - youtube: For YouTube videos or channels
 - podcast: For podcasts and audio content
 - artist: For music artists and bands

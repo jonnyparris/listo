@@ -22,8 +22,8 @@
 
 	const categories: (Category | 'all')[] = [
 		'all',
+		'series',
 		'movie',
-		'show',
 		'youtube',
 		'podcast',
 		'artist',

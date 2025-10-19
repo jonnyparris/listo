@@ -1,6 +1,6 @@
 export type Category =
+	| 'series'
 	| 'movie'
-	| 'show'
 	| 'youtube'
 	| 'podcast'
 	| 'artist'
@@ -66,8 +66,8 @@ export interface MovieMetadata extends BaseMetadata {
 	streaming_links?: string[];
 }
 
-export interface ShowMetadata extends BaseMetadata {
-	type: 'show';
+export interface SeriesMetadata extends BaseMetadata {
+	type: 'series';
 	tmdb_id?: number;
 	imdb_rating?: number;
 	rt_score?: number;
@@ -107,7 +107,7 @@ export interface RestaurantMetadata extends BaseMetadata {
 
 export type RecommendationMetadata =
 	| MovieMetadata
-	| ShowMetadata
+	| SeriesMetadata
 	| YouTubeMetadata
 	| BookMetadata
 	| MusicMetadata
