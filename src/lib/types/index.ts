@@ -61,6 +61,8 @@ export interface MovieMetadata extends BaseMetadata {
 	tmdb_id?: number;
 	imdb_rating?: number;
 	rt_score?: number;
+	rt_critic_score?: number;
+	rt_audience_score?: number;
 	streaming_links?: string[];
 }
 
@@ -69,6 +71,8 @@ export interface ShowMetadata extends BaseMetadata {
 	tmdb_id?: number;
 	imdb_rating?: number;
 	rt_score?: number;
+	rt_critic_score?: number;
+	rt_audience_score?: number;
 	streaming_links?: string[];
 }
 

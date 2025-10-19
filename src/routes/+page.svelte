@@ -70,6 +70,9 @@
 	
 	// Mobile menu
 	let showMobileMenu = $state(false);
+	
+	// Back to top button
+	let showBackToTop = $state(false);
 
 	// Sync state
 	let syncing = $state(false);
@@ -130,9 +133,10 @@
 	];
 
 	onMount(() => {
-		// Scroll detection for mobile header
+		// Scroll detection for mobile header and back to top
 		const handleScroll = () => {
 			isScrolled = window.scrollY > 100;
+			showBackToTop = window.scrollY > 400;
 		};
 		
 		window.addEventListener('scroll', handleScroll);
@@ -353,6 +357,10 @@
 		localStorage.removeItem('had_session_recommendations');
 		localStorage.removeItem('previous_session_id');
 		showMigrationPrompt = false;
+	}
+
+	function scrollToTop() {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 
 	function applyFilters() {
@@ -577,6 +585,27 @@
 			.join(' ');
 	}
 
+	function getCategoryIcon(cat: Category): string {
+		const icons: Record<Category, string> = {
+			'movie': '🎬',
+			'show': '📺',
+			'youtube': '📹',
+			'podcast': '🎙️',
+			'artist': '🎤',
+			'song': '🎵',
+			'genre': '🎶',
+			'restaurant': '🍽️',
+			'recipe': '👨‍🍳',
+			'activity': '⚡',
+			'video-game': '🎮',
+			'board-game': '🎲',
+			'book': '📚',
+			'graphic-novel': '📖',
+			'quote': '💭'
+		};
+		return icons[cat] || '📌';
+	}
+
 	function formatDate(timestamp: number): string {
 		return new Date(timestamp * 1000).toLocaleDateString('en-US', {
 			month: 'short',
@@ -631,13 +660,12 @@
 					
 					if (response.ok) {
 						const { condensed } = await response.json();
-						formDescription = condensed;
-					} else {
-						formDescription = rawDescription.substring(0, 153) + '...';
+						if (condensed && condensed.trim()) {
+							formDescription = condensed;
+						}
 					}
 				} catch (error) {
 					console.error('Failed to condense description:', error);
-					formDescription = rawDescription.substring(0, 153) + '...';
 				}
 			} else if (rawDescription) {
 				formDescription = rawDescription;
@@ -736,14 +764,7 @@
 
 		// Fallback to clipboard
 		try {
-			let clipboardText = shareText;
-
-			// Add image URL to clipboard text if available
-			if (imageUrl) {
-				clipboardText += `\n\nImage: ${imageUrl}`;
-			}
-
-			await navigator.clipboard.writeText(clipboardText);
+			await navigator.clipboard.writeText(shareText);
 			toastStore.success('Copied to clipboard!');
 		} catch (error) {
 			console.error('Failed to share:', error);
@@ -779,6 +800,12 @@
 			text += `\nReview: ${rec.review}\n`;
 		}
 
+		// Add image
+		const imageUrl = rec.metadata?.poster_url || rec.metadata?.thumbnail_url || rec.metadata?.cover_url || rec.metadata?.album_art;
+		if (imageUrl) {
+			text += `\n🖼️ Image: ${imageUrl}`;
+		}
+
 		// Add relevant links
 		if (rec.metadata?.spotify_url) {
 			text += `\n🎵 Spotify: ${rec.metadata.spotify_url}`;
@@ -788,6 +815,9 @@
 		}
 		if (rec.metadata?.google_maps_link) {
 			text += `\n📍 Location: ${rec.metadata.google_maps_link}`;
+		}
+		if (rec.category === 'restaurant' && !rec.metadata?.google_maps_link) {
+			text += `\n📍 Search: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.title)}`;
 		}
 
 		text += `\n\nShared from Listo`;
@@ -1533,6 +1563,20 @@
 			</button>
 		{/if}
 
+		<!-- Back to Top Button -->
+		{#if showBackToTop}
+			<button
+				onclick={scrollToTop}
+				class="fixed bottom-8 left-8 h-12 w-12 rounded-full bg-surface-light dark:bg-surface-dark shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50 border border-black/5 dark:border-white/5"
+				aria-label="Back to top"
+				title="Back to top"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-text dark:text-white">
+					<path d="M12 19V5M5 12l7-7 7 7"/>
+				</svg>
+			</button>
+		{/if}
+
 		<!-- Add/Edit Form Modal -->
 		{#if showAddForm && !showCompleted}
 			<div
@@ -1540,7 +1584,7 @@
 			>
 				<div class="min-h-screen flex flex-col">
 					<!-- Header -->
-					<div class="sticky top-0 bg-white dark:bg-surface-dark border-b border-black/5 dark:border-white/5 px-4 py-4 sm:px-6">
+					<div class="sticky top-0 z-50 bg-white dark:bg-surface-dark border-b border-black/5 dark:border-white/5 px-4 py-4 sm:px-6">
 						<div class="flex items-center justify-between max-w-2xl mx-auto">
 							<div class="flex items-center gap-3">
 								<h2 class="text-xl sm:text-2xl font-semibold text-text dark:text-white">
@@ -1607,7 +1651,7 @@
 											</button>
 										</div>
 										<!-- Category button cluster -->
-										<div class="relative -mx-4 px-4 sm:mx-0 sm:px-0">
+										<div class="relative -mx-4 px-4 sm:mx-0 sm:px-0 z-10">
 											<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
 												{#each categories as cat}
 													<button
@@ -1885,7 +1929,7 @@
 					</div>
 				{:else}
 					{#each filteredRecommendations as rec, index (rec.id)}
-						<Card class="{layoutMode === 'grid' ? 'hover:shadow-lg' : 'hover:scale-[1.01]'} transition-all {selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''}">
+						<Card class="{layoutMode === 'grid' ? 'hover:shadow-lg' : 'hover:scale-[1.01]'} transition-all {selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''} {layoutMode === 'compact' ? '!p-3' : ''}">
 							{#if completingId === rec.id}
 								<!-- Complete Form -->
 								<div class="space-y-4">
@@ -1951,7 +1995,7 @@
 								<div
 									role="button"
 									tabindex="0"
-									class="flex items-start gap-4 cursor-pointer {layoutMode === 'grid' ? 'flex-col' : ''}"
+									class="flex items-start gap-4 cursor-pointer {layoutMode === 'grid' ? 'flex-col' : ''} {layoutMode === 'compact' ? 'gap-3' : ''}"
 									onclick={() => toggleCardExpansion(rec.id)}
 									onkeydown={(e) => {
 										if (e.key === 'Enter' || e.key === ' ') {
@@ -1964,26 +2008,26 @@
 										<img
 											src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
 											alt={rec.title}
-											class="{layoutMode === 'grid' ? 'w-full h-48' : layoutMode === 'compact' ? 'h-20 w-16' : 'h-32 w-24'} rounded object-cover flex-shrink-0"
+											class="{layoutMode === 'grid' ? 'w-full h-48' : layoutMode === 'compact' ? 'h-16 w-12' : 'h-32 w-24'} rounded object-cover flex-shrink-0"
 											loading="lazy"
 											decoding="async"
 										/>
 									{/if}
 									<div class="flex-1 min-w-0 {layoutMode === 'grid' ? 'w-full' : ''}">
 										<div class="mb-1 flex items-center gap-2 flex-wrap">
-											<span class="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-text">
-												{formatCategory(rec.category)}
+											<span class="rounded-full bg-primary/20 px-2 py-1 text-sm" title={formatCategory(rec.category)}>
+												{getCategoryIcon(rec.category)}
 											</span>
-											{#if rec.metadata?.year}
+											{#if rec.metadata?.year && layoutMode !== 'compact'}
 												<span class="text-xs text-text-muted">
 													{rec.metadata.year}
 												</span>
 											{/if}
 										</div>
-										<h3 class="mb-1 {layoutMode === 'compact' ? 'text-base' : 'text-lg'} font-semibold text-text dark:text-white">
+										<h3 class="mb-1 {layoutMode === 'compact' ? 'text-sm' : 'text-lg'} font-semibold text-text dark:text-white">
 											{rec.title}
 										</h3>
-										{#if rec.source}
+										{#if rec.source && layoutMode !== 'compact'}
 											<div class="mb-2 text-xs text-text-muted flex items-center gap-1">
 												<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 													<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -1991,7 +2035,7 @@
 												Recommended by {rec.source}
 											</div>
 										{/if}
-										{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
+										{#if rec.metadata?.genres && rec.metadata.genres.length > 0 && layoutMode !== 'compact'}
 											<div class="mb-2 flex gap-1 flex-wrap">
 												{#each rec.metadata.genres.slice(0, 3) as genre}
 													<span class="text-xs bg-surface-light dark:bg-surface-dark px-2 py-1 rounded">
@@ -2000,7 +2044,7 @@
 												{/each}
 											</div>
 										{/if}
-									{#if rec.metadata?.spotify_url || rec.metadata?.youtube_url || rec.category === 'restaurant'}
+									{#if (rec.metadata?.spotify_url || rec.metadata?.youtube_url || rec.category === 'restaurant') && layoutMode !== 'compact'}
 										<div class="mb-2 flex gap-2 items-center flex-wrap">
 											{#if rec.metadata?.spotify_url}
 													<a
@@ -2057,12 +2101,15 @@
 											{#if rec.metadata?.runtime}
 												<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 											{/if}
-						<div class="flex gap-3 mt-2 text-xs">
+						<div class="flex gap-3 mt-2 text-xs flex-wrap">
 							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.imdb_rating}
 								<span class="text-text-muted">TMDB: {(rec.metadata as any).imdb_rating.toFixed(1)}/10</span>
 							{/if}
-							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_score}
-								<span class="text-text-muted">🍅 {(rec.metadata as any).rt_score}%</span>
+							{#if (rec.category === 'movie' || rec.category === 'show') && ((rec.metadata as any)?.rt_score || (rec.metadata as any)?.rt_critic_score)}
+								<span class="text-text-muted" title="Rotten Tomatoes Tomatometer">🍅 {((rec.metadata as any)?.rt_critic_score || (rec.metadata as any)?.rt_score)}%</span>
+							{/if}
+							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_audience_score}
+								<span class="text-text-muted" title="Rotten Tomatoes Audience Score">🍿 {(rec.metadata as any).rt_audience_score}%</span>
 							{/if}
 						</div>
 						{#if rec.category === 'movie' || rec.category === 'show'}
@@ -2138,13 +2185,15 @@
 											<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
 										</svg>
 									</button>
-										<button
-											onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
-											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
-											title="Delete"
-										>
-											🗑
-										</button>
+										{#if expandedCardId === rec.id}
+											<button
+												onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
+												class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+												title="Delete"
+											>
+												🗑
+											</button>
+										{/if}
 									</div>
 								</div>
 							{/if}
@@ -2196,8 +2245,8 @@
 								{/if}
 								<div class="flex-1 min-w-0">
 									<div class="mb-1 flex items-center gap-2 flex-wrap">
-										<span class="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-text">
-											{formatCategory(rec.category)}
+										<span class="rounded-full bg-primary/20 px-2 py-1 text-sm" title={formatCategory(rec.category)}>
+											{getCategoryIcon(rec.category)}
 										</span>
 										{#if rec.metadata?.year}
 											<span class="text-xs text-text-muted">
@@ -2297,12 +2346,15 @@
 										{#if rec.metadata?.runtime}
 											<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 										{/if}
-						<div class="flex gap-3 mt-2 text-xs">
+						<div class="flex gap-3 mt-2 text-xs flex-wrap">
 							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.imdb_rating}
 								<span class="text-text-muted">TMDB: {(rec.metadata as any).imdb_rating.toFixed(1)}/10</span>
 							{/if}
-							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_score}
-								<span class="text-text-muted">🍅 {(rec.metadata as any).rt_score}%</span>
+							{#if (rec.category === 'movie' || rec.category === 'show') && ((rec.metadata as any)?.rt_score || (rec.metadata as any)?.rt_critic_score)}
+								<span class="text-text-muted" title="Rotten Tomatoes Tomatometer">🍅 {((rec.metadata as any)?.rt_critic_score || (rec.metadata as any)?.rt_score)}%</span>
+							{/if}
+							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_audience_score}
+								<span class="text-text-muted" title="Rotten Tomatoes Audience Score">🍿 {(rec.metadata as any).rt_audience_score}%</span>
 							{/if}
 						</div>
 						{#if rec.category === 'movie' || rec.category === 'show'}
