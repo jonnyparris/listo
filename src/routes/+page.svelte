@@ -35,7 +35,7 @@
 
 	// Form state
 	let formTitle = $state('');
-	let formCategory = $state<Category>('movie');
+	let formCategory = $state<Category>('show');
 	let formDescription = $state('');
 	let formSource = $state('');
 	let formMetadata = $state<any>(undefined);
@@ -1113,12 +1113,12 @@
 		{/if}
 
 		<!-- Header -->
-		<header class="mb-12 text-center flex justify-center">
+		<header class="mb-8 text-center flex justify-center">
 			<a href="/" class="hover:opacity-80 transition-opacity">
 				<img
 					src="/Listo_Logo_IntentionalChill.svg"
 					alt="Listo - intentional chill"
-					class="w-full max-w-[280px] sm:max-w-[320px] md:max-w-[400px] h-auto text-text dark:text-white"
+					class="w-full max-w-[200px] sm:max-w-[240px] md:max-w-[280px] h-auto text-text dark:text-white"
 				/>
 			</a>
 		</header>
@@ -1632,8 +1632,26 @@
 											{#if rec.metadata?.runtime}
 												<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 											{/if}
-											{#if rec.metadata?.rating}
-												<p class="text-xs text-text-muted mt-1">Rating: {rec.metadata.rating}/10</p>
+											<div class="flex gap-3 mt-2 text-xs">
+												{#if rec.metadata?.rating}
+													<span class="text-text-muted">TMDB: {rec.metadata.rating}/10</span>
+												{/if}
+												{#if rec.metadata?.rt_score}
+													<span class="text-text-muted">🍅 {rec.metadata.rt_score}%</span>
+												{/if}
+											</div>
+											{#if (rec.category === 'movie' || rec.category === 'show') && rec.metadata?.tmdb_id}
+												<div class="flex gap-2 mt-2">
+													<a
+														href="https://www.themoviedb.org/{rec.category === 'movie' ? 'movie' : 'tv'}/{rec.metadata.tmdb_id}"
+														target="_blank"
+														rel="noopener noreferrer"
+														class="text-xs text-primary hover:underline"
+														onclick={(e) => e.stopPropagation()}
+													>
+														View on TMDB →
+													</a>
+												</div>
 											{/if}
 											{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
 												<p class="text-sm text-text-muted mt-2 pt-2 border-t border-black/5 dark:border-white/5">
@@ -1835,13 +1853,31 @@
 											{rec.description}
 										</p>
 									{/if}
-									{#if expandedCardId === rec.id}
+									{#if expandedCardId === rec.id && rec.metadata}
 										<!-- Additional metadata shown when expanded -->
 										{#if rec.metadata?.runtime}
 											<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 										{/if}
-										{#if rec.metadata?.rating}
-											<p class="text-xs text-text-muted mt-1">Rating: {rec.metadata.rating}/10</p>
+										<div class="flex gap-3 mt-2 text-xs">
+											{#if rec.metadata?.rating}
+												<span class="text-text-muted">TMDB: {rec.metadata.rating}/10</span>
+											{/if}
+											{#if rec.metadata?.rt_score}
+												<span class="text-text-muted">🍅 {rec.metadata.rt_score}%</span>
+											{/if}
+										</div>
+										{#if (rec.category === 'movie' || rec.category === 'show') && rec.metadata?.tmdb_id}
+											<div class="flex gap-2 mt-2">
+												<a
+													href="https://www.themoviedb.org/{rec.category === 'movie' ? 'movie' : 'tv'}/{rec.metadata.tmdb_id}"
+													target="_blank"
+													rel="noopener noreferrer"
+													class="text-xs text-primary hover:underline"
+													onclick={(e) => e.stopPropagation()}
+												>
+													View on TMDB →
+												</a>
+											</div>
 										{/if}
 										{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
 											<p class="text-sm text-text-muted mt-2 pt-2 border-t border-black/5 dark:border-white/5">
