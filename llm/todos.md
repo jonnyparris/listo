@@ -1,10 +1,5 @@
-# Completed ✅
-- [x] Fixed cross-device recommendation syncing (added auto-pull on mount, periodic sync every 30s, auto-push on mutations)
-- [x] Mobile back button now closes the add form using History API
-- [x] Footer updated to show "Made by jonnyparris" with link to ruskinconstant.com
-- [x] Keyboard shortcuts link hidden on mobile screens (shows only on md+)
-- [x] Logo header enlarged without adding vertical space (increased size, reduced bottom margin)
-- [x] Fixed Safari desktop menu visibility (removed negative margin)
+# High Priority
+- [x] Cross-device recommendation syncing - FIXED! The issue was that each registration created a new user ID. Now when you register with a synced passkey (e.g., iCloud Keychain) on multiple devices, it correctly identifies as the same user
 
 # Outstanding Tasks
 - [ ] the compact list view should just be titles and category icons - clicking should expand to a full card
