@@ -32,6 +32,7 @@
 	// Search state
 	let searchQuery = $state('');
 	let selectedCategory = $state<Category | 'all'>('all');
+	let showMobileSearch = $state(false);
 	
 	// Sort state
 	type SortOption = 'date-added' | 'alphabetical' | 'category';
@@ -114,6 +115,23 @@
 		});
 		return Array.from(sources).sort();
 	});
+
+	// Duplicate detection - set of existing title+category combinations
+	let existingRecommendations = $derived.by(() => {
+		const existing = new Set<string>();
+		[...recommendations, ...completedRecs].forEach(rec => {
+			// Create a normalized key for duplicate detection
+			const key = `${rec.title.toLowerCase().trim()}::${rec.category}`;
+			existing.add(key);
+		});
+		return existing;
+	});
+
+	// Helper function to check if a recommendation already exists
+	function isDuplicate(title: string, category: Category): boolean {
+		const key = `${title.toLowerCase().trim()}::${category}`;
+		return existingRecommendations.has(key);
+	}
 
 	const categories: Category[] = [
 		'series',
@@ -841,14 +859,24 @@
 				// If there's an image and the browser supports sharing files
 				if (imageUrl && navigator.canShare) {
 					try {
-						// Fetch the image and convert to blob
-						const response = await fetch(imageUrl);
-						const blob = await response.blob();
-						const file = new File([blob], 'recommendation.jpg', { type: blob.type });
+						// Use our proxy endpoint to fetch the image and avoid CORS issues
+						const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+						const response = await fetch(proxyUrl);
 
-						// Check if we can share files
-						if (navigator.canShare({ files: [file] })) {
-							shareData.files = [file];
+						if (response.ok) {
+							const blob = await response.blob();
+
+							// Determine file extension from content type or default to jpg
+							const contentType = response.headers.get('content-type') || 'image/jpeg';
+							const ext = contentType.split('/')[1]?.split('+')[0] || 'jpg';
+							const fileName = `${rec.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${ext}`;
+
+							const file = new File([blob], fileName, { type: contentType });
+
+							// Check if we can share files
+							if (navigator.canShare({ files: [file] })) {
+								shareData.files = [file];
+							}
 						}
 					} catch (imgError) {
 						console.warn('Failed to fetch image for sharing:', imgError);
@@ -1491,34 +1519,7 @@
 			</a>
 		</header>
 
-		<!-- View Toggle -->
-		<div class="mb-8 flex justify-center gap-2">
-			<button
-				onclick={() => (showCompleted = false)}
-				class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
-				title="Active recommendations"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-				</svg>
-				<span class="hidden sm:inline">Active</span>
-				<span class="text-xs opacity-75">({recommendations.length})</span>
-			</button>
-			<button
-				onclick={() => (showCompleted = true)}
-				class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
-				title="Completed recommendations"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-					<polyline points="22 4 12 14.01 9 11.01"></polyline>
-				</svg>
-				<span class="hidden sm:inline">Completed</span>
-				<span class="text-xs opacity-75">({completedRecs.length})</span>
-			</button>
-		</div>
-
-		<!-- Category Subtotals -->
+		<!-- Category Filters with Active/Completed Toggle -->
 		{#if recommendations.length > 0 || completedRecs.length > 0}
 			{@const categoryCounts = categories.reduce((acc, cat) => {
 				const activeCount = recommendations.filter(r => r.category === cat).length;
@@ -1531,7 +1532,35 @@
 			}, [] as Array<{ category: string; active: number; completed: number; total: number }>)}
 			{#if categoryCounts.length > 0}
 				<div class="mb-6">
-					<h3 class="text-sm font-semibold text-text dark:text-white mb-3 px-1">By Category</h3>
+					<!-- Header with Active/Completed Toggle -->
+					<div class="flex items-center justify-between mb-3 px-1 flex-wrap gap-3">
+						<h3 class="text-sm font-semibold text-text dark:text-white">By Category</h3>
+						<div class="flex gap-2">
+							<button
+								onclick={() => (showCompleted = false)}
+								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
+								title="Active recommendations"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+								</svg>
+								<span class="hidden sm:inline">Active</span>
+								<span class="opacity-75">({recommendations.length})</span>
+							</button>
+							<button
+								onclick={() => (showCompleted = true)}
+								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
+								title="Completed recommendations"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+									<polyline points="22 4 12 14.01 9 11.01"></polyline>
+								</svg>
+								<span class="hidden sm:inline">Completed</span>
+								<span class="opacity-75">({completedRecs.length})</span>
+							</button>
+						</div>
+					</div>
 					<div class="flex flex-wrap gap-2">
 						{#each categoryCounts as { category, active, completed, total }}
 							{@const isSelected = selectedCategory === category}
@@ -1559,13 +1588,56 @@
 
 		<!-- Search and Filter -->
 		<div class="mb-8 space-y-4">
-			<SearchBar
-				bind:value={searchQuery}
-				bind:selectedCategory={selectedCategory}
-				onSearch={handleSearch}
-				onCategoryChange={handleCategoryChange}
-				placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
-			/>
+			<!-- Mobile: Show search icon button -->
+			<div class="md:hidden">
+				{#if showMobileSearch}
+					<div class="fixed inset-0 bg-black/50 z-40" onclick={() => showMobileSearch = false}></div>
+					<div class="fixed top-0 left-0 right-0 bg-background-light dark:bg-background-dark p-4 z-50 shadow-lg">
+						<div class="flex items-center gap-2">
+							<SearchBar
+								bind:value={searchQuery}
+								bind:selectedCategory={selectedCategory}
+								onSearch={handleSearch}
+								onCategoryChange={handleCategoryChange}
+								placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
+							/>
+							<button
+								onclick={() => showMobileSearch = false}
+								class="p-2 rounded-lg hover:bg-surface-light dark:hover:bg-surface-dark"
+								title="Close search"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<line x1="18" y1="6" x2="6" y2="18"></line>
+									<line x1="6" y1="6" x2="18" y2="18"></line>
+								</svg>
+							</button>
+						</div>
+					</div>
+				{:else}
+					<button
+						onclick={() => showMobileSearch = true}
+						class="w-full flex items-center gap-2 px-4 py-3 bg-surface-light dark:bg-surface-dark rounded-xl text-text-muted hover:text-text dark:hover:text-white transition-colors"
+						title="Search"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="11" cy="11" r="8"></circle>
+							<path d="m21 21-4.35-4.35"></path>
+						</svg>
+						<span class="text-sm">{showCompleted ? 'Search completed items...' : 'Search recommendations...'}</span>
+					</button>
+				{/if}
+			</div>
+
+			<!-- Desktop: Show full search bar -->
+			<div class="hidden md:block">
+				<SearchBar
+					bind:value={searchQuery}
+					bind:selectedCategory={selectedCategory}
+					onSearch={handleSearch}
+					onCategoryChange={handleCategoryChange}
+					placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
+				/>
+			</div>
 			
 			<!-- Sort and Layout Controls -->
 			<div class="flex items-center justify-between gap-4 text-sm">
@@ -1795,6 +1867,7 @@
 													onSelect={handleEnrichmentSelect}
 													placeholder={`Search for a ${formCategory}...`}
 													autofocus={true}
+													isDuplicate={isDuplicate}
 													onkeydown={(e) => {
 														if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 															e.preventDefault();
@@ -1809,6 +1882,7 @@
 													onSelect={handleEnrichmentSelect}
 													placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
 													autofocus={true}
+													isDuplicate={isDuplicate}
 													onkeydown={(e) => {
 														if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 															e.preventDefault();

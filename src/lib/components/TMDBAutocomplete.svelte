@@ -10,6 +10,7 @@
 		placeholder?: string;
 		autofocus?: boolean;
 		onkeydown?: (event: KeyboardEvent) => void;
+		isDuplicate?: (title: string, category: Category) => boolean;
 	}
 
 	let {
@@ -18,7 +19,8 @@
 		onSelect,
 		placeholder = 'Search for a movie or series...',
 		autofocus = false,
-		onkeydown
+		onkeydown,
+		isDuplicate
 	}: Props = $props();
 
 	let suggestions = $state<SearchSuggestion[]>([]);
@@ -191,8 +193,15 @@
 						/>
 					{/if}
 					<div class="flex-1 min-w-0">
-						<div class="font-medium text-text dark:text-white truncate">
-							{suggestion.title}
+						<div class="flex items-center gap-2">
+							<div class="font-medium text-text dark:text-white truncate">
+								{suggestion.title}
+							</div>
+							{#if isDuplicate?.(suggestion.title, category)}
+								<span class="flex-shrink-0 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-2 py-0.5 rounded-full">
+									Already saved
+								</span>
+							{/if}
 						</div>
 						{#if suggestion.subtitle || suggestion.year}
 							<div class="text-sm text-text-muted">
