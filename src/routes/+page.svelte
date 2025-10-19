@@ -210,6 +210,14 @@
 			}
 		});
 
+		// Handle browser back button for closing add form
+		const handlePopState = (e: PopStateEvent) => {
+			if (showAddForm && !e.state?.formOpen) {
+				resetForm();
+			}
+		};
+		window.addEventListener('popstate', handlePopState);
+
 		// Global keyboard shortcuts
 		const handleKeydown = (e: KeyboardEvent) => {
 			// Don't trigger shortcuts when typing in input fields or textareas
@@ -221,7 +229,7 @@
 				if (showKeyboardHelp) {
 					showKeyboardHelp = false;
 				} else if (showAddForm) {
-					resetForm();
+					closeAddForm();
 				} else if (completingId) {
 					completingId = null;
 				}
@@ -240,7 +248,7 @@
 			// N - New recommendation (when not in completed view)
 			if (e.key === 'n' && !showCompleted && !showAddForm) {
 				e.preventDefault();
-				showAddForm = true;
+				openAddForm();
 			}
 
 			// / - Focus search
@@ -331,6 +339,7 @@
 			window.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('click', handleClickOutside);
 			window.removeEventListener('scroll', handleScroll);
+			window.removeEventListener('popstate', handlePopState);
 		};
 	});
 
@@ -574,7 +583,7 @@
 		formDescription = rec.description || '';
 		formSource = rec.source || '';
 		formMetadata = rec.metadata;
-		showAddForm = true;
+		openAddForm();
 	}
 
 	function deleteRecommendation(id: string) {
@@ -624,6 +633,22 @@
 		});
 		await loadRecommendations();
 		autoSync(); // Sync in background
+	}
+
+	function openAddForm() {
+		showAddForm = true;
+		// Push a history state so mobile back button can close the form
+		if (typeof window !== 'undefined') {
+			window.history.pushState({ formOpen: true }, '');
+		}
+	}
+
+	function closeAddForm() {
+		resetForm();
+		// If we pushed a history state, go back
+		if (typeof window !== 'undefined' && window.history.state?.formOpen) {
+			window.history.back();
+		}
 	}
 
 	function resetForm() {
@@ -1618,7 +1643,7 @@
 		{#if !showCompleted && !showAddForm}
 			<button
 				onclick={() => {
-					showAddForm = true;
+					openAddForm();
 				}}
 				class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-secondary shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50"
 				aria-label="Add recommendation"
@@ -1976,7 +2001,7 @@
 							<p class="text-text-muted mb-4">Start building your list of things to watch, read, listen to, and more.</p>
 							<button
 								onclick={() => {
-									showAddForm = true;
+									openAddForm();
 								}}
 								class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-sm hover:shadow-md font-medium"
 							>
@@ -2540,14 +2565,14 @@
 					<a href="/about" class="hover:text-text dark:hover:text-white transition-colors">
 						About
 					</a>
-					<span class="text-xs">·</span>
+					<span class="text-xs hidden md:inline">·</span>
 					<button
 						onclick={() => showKeyboardHelp = true}
-						class="hover:text-text dark:hover:text-white transition-colors"
+						class="hidden md:inline hover:text-text dark:hover:text-white transition-colors"
 					>
 						Keyboard Shortcuts
 					</button>
-					<span class="text-xs">·</span>
+					<span class="text-xs hidden md:inline">·</span>
 					<button
 						onclick={() => showSettingsMenu = true}
 						class="hover:text-text dark:hover:text-white transition-colors"
@@ -2556,7 +2581,7 @@
 					</button>
 				</div>
 				<div class="text-xs flex items-center gap-2">
-					<span>Made with intentional chill</span>
+					<span>Made by <a href="https://ruskinconstant.com" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80 transition-opacity">jonnyparris</a></span>
 					<span class="opacity-50">·</span>
 					<span>Listo © 2025</span>
 				</div>
