@@ -96,6 +96,7 @@
 		show: boolean;
 		title: string;
 		message: string;
+		confirmLabel?: string;
 		onConfirm: () => void;
 	} | null>(null);
 
@@ -1058,7 +1059,7 @@
 	
 	async function tryEnrichOnCategoryChange() {
 		// Only enrich if the new category supports enrichment
-		const enrichableCategories: Category[] = ['movie', 'show', 'book', 'graphic-novel', 'youtube', 'artist', 'song'];
+		const enrichableCategories: Category[] = ['movie', 'series', 'book', 'graphic-novel', 'youtube', 'artist', 'song'];
 		if (!enrichableCategories.includes(formCategory)) {
 			return;
 		}
@@ -1087,18 +1088,7 @@
 		}
 	}
 
-	// Scroll selected category into view when form opens or category changes
-	$effect(() => {
-		if (showAddForm && formCategory) {
-			// Small delay to ensure DOM is rendered
-			setTimeout(() => {
-				const selectedButton = document.querySelector(`button[data-category="${formCategory}"]`);
-				if (selectedButton) {
-					selectedButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-				}
-			}, 100);
-		}
-	});
+	// Note: Removed scroll effect as categories now wrap and are all visible
 
 	// Sign out functionality
 	async function handleSignOut() {
@@ -1106,6 +1096,7 @@
 			show: true,
 			title: 'Sign Out',
 			message: 'Are you sure you want to sign out? Your local data will remain on this device.',
+			confirmLabel: 'Sign Out',
 			onConfirm: async () => {
 				const result = await authService.logout();
 				if (result.success) {
@@ -1683,22 +1674,19 @@
 											</button>
 										</div>
 										<!-- Category button cluster -->
-										<div class="relative -mx-4 px-4 sm:mx-0 sm:px-0 z-10">
-											<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory touch-pan-x" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+										<div class="relative z-10">
+											<div class="flex flex-wrap gap-2 justify-center">
 												{#each categories as cat}
 													<button
 														type="button"
 														data-category={cat}
 														onclick={() => formCategory = cat}
-														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-lg scale-105 ring-2 ring-primary/30' : 'bg-surface-light dark:bg-surface-dark text-text dark:text-white hover:bg-primary/10 dark:hover:bg-primary/10'}"
+														class="rounded-full font-semibold transition-all duration-300 ease-out {formCategory === cat ? 'bg-primary text-white shadow-lg scale-110 ring-2 ring-primary/30 px-6 py-3 text-base' : 'bg-surface-light dark:bg-surface-dark text-text dark:text-white hover:bg-primary/10 dark:hover:bg-primary/10 scale-75 px-3 py-1.5 text-xs opacity-70 hover:opacity-100'}"
 													>
 														{formatCategory(cat)}
 													</button>
 												{/each}
 											</div>
-											<!-- Fade edges for scroll indication -->
-											<div class="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-white dark:from-gray-900 to-transparent pointer-events-none sm:hidden"></div>
-											<div class="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent pointer-events-none sm:hidden"></div>
 										</div>
 									</div>
 
@@ -1731,7 +1719,7 @@
 														</span>
 													{/if}
 												</label>
-											{#if formCategory === 'movie' || formCategory === 'show'}
+											{#if formCategory === 'movie' || formCategory === 'series'}
 												<TMDBAutocomplete
 													bind:value={formTitle}
 													category={formCategory}
@@ -2134,17 +2122,17 @@
 												<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 											{/if}
 						<div class="flex gap-3 mt-2 text-xs flex-wrap">
-							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.imdb_rating}
+							{#if (rec.category === 'movie' || rec.category === 'series') && (rec.metadata as any)?.imdb_rating}
 								<span class="text-text-muted">TMDB: {(rec.metadata as any).imdb_rating.toFixed(1)}/10</span>
 							{/if}
-							{#if (rec.category === 'movie' || rec.category === 'show') && ((rec.metadata as any)?.rt_score || (rec.metadata as any)?.rt_critic_score)}
+							{#if (rec.category === 'movie' || rec.category === 'series') && ((rec.metadata as any)?.rt_score || (rec.metadata as any)?.rt_critic_score)}
 								<span class="text-text-muted" title="Rotten Tomatoes Tomatometer">🍅 {((rec.metadata as any)?.rt_critic_score || (rec.metadata as any)?.rt_score)}%</span>
 							{/if}
-							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_audience_score}
+							{#if (rec.category === 'movie' || rec.category === 'series') && (rec.metadata as any)?.rt_audience_score}
 								<span class="text-text-muted" title="Rotten Tomatoes Audience Score">🍿 {(rec.metadata as any).rt_audience_score}%</span>
 							{/if}
 						</div>
-						{#if rec.category === 'movie' || rec.category === 'show'}
+						{#if rec.category === 'movie' || rec.category === 'series'}
 							<div class="flex gap-3 mt-2">
 								{#if (rec.metadata as any)?.tmdb_id}
 									<a
@@ -2379,17 +2367,17 @@
 											<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 										{/if}
 						<div class="flex gap-3 mt-2 text-xs flex-wrap">
-							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.imdb_rating}
+							{#if (rec.category === 'movie' || rec.category === 'series') && (rec.metadata as any)?.imdb_rating}
 								<span class="text-text-muted">TMDB: {(rec.metadata as any).imdb_rating.toFixed(1)}/10</span>
 							{/if}
-							{#if (rec.category === 'movie' || rec.category === 'show') && ((rec.metadata as any)?.rt_score || (rec.metadata as any)?.rt_critic_score)}
+							{#if (rec.category === 'movie' || rec.category === 'series') && ((rec.metadata as any)?.rt_score || (rec.metadata as any)?.rt_critic_score)}
 								<span class="text-text-muted" title="Rotten Tomatoes Tomatometer">🍅 {((rec.metadata as any)?.rt_critic_score || (rec.metadata as any)?.rt_score)}%</span>
 							{/if}
-							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_audience_score}
+							{#if (rec.category === 'movie' || rec.category === 'series') && (rec.metadata as any)?.rt_audience_score}
 								<span class="text-text-muted" title="Rotten Tomatoes Audience Score">🍿 {(rec.metadata as any).rt_audience_score}%</span>
 							{/if}
 						</div>
-						{#if rec.category === 'movie' || rec.category === 'show'}
+						{#if rec.category === 'movie' || rec.category === 'series'}
 							<div class="flex gap-3 mt-2">
 								{#if (rec.metadata as any)?.tmdb_id}
 									<a
@@ -2481,7 +2469,7 @@
 		<ConfirmModal
 			title={confirmModal.title}
 			message={confirmModal.message}
-			confirmLabel="Delete"
+			confirmLabel={confirmModal.confirmLabel || "Delete"}
 			cancelLabel="Cancel"
 			variant="danger"
 			onConfirm={confirmModal.onConfirm}
