@@ -32,6 +32,18 @@
 	// Search state
 	let searchQuery = $state('');
 	let selectedCategory = $state<Category | 'all'>('all');
+	
+	// Sort state
+	type SortOption = 'date-added' | 'alphabetical' | 'category';
+	let sortBy = $state<SortOption>('date-added');
+	let sortAscending = $state(false);
+	
+	// Layout state
+	type LayoutOption = 'normal' | 'compact' | 'grid';
+	let layoutMode = $state<LayoutOption>('normal');
+	
+	// Scroll state for mobile header
+	let isScrolled = $state(false);
 
 	// Form state
 	let formTitle = $state('');
@@ -118,6 +130,13 @@
 	];
 
 	onMount(() => {
+		// Scroll detection for mobile header
+		const handleScroll = () => {
+			isScrolled = window.scrollY > 100;
+		};
+		
+		window.addEventListener('scroll', handleScroll);
+		
 		async function setup() {
 			// Get current user (authenticated or session-only)
 			const user = await authService.getCurrentUser();
@@ -276,6 +295,7 @@
 		return () => {
 			window.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('click', handleClickOutside);
+			window.removeEventListener('scroll', handleScroll);
 		};
 	});
 
@@ -364,6 +384,37 @@
 				genresText.includes(query);
 			return matchesCategory && matchesSearch;
 		});
+		
+		// Apply sorting
+		applySorting();
+	}
+	
+	function applySorting() {
+		const sortFn = getSortFunction();
+		filteredRecommendations.sort(sortFn);
+		filteredCompletedRecs.sort(sortFn);
+	}
+	
+	function getSortFunction() {
+		const multiplier = sortAscending ? 1 : -1;
+		
+		switch (sortBy) {
+			case 'alphabetical':
+				return (a: LocalRecommendation, b: LocalRecommendation) => 
+					multiplier * a.title.localeCompare(b.title);
+			
+			case 'category':
+				return (a: LocalRecommendation, b: LocalRecommendation) => {
+					const catCompare = multiplier * a.category.localeCompare(b.category);
+					if (catCompare !== 0) return catCompare;
+					return a.title.localeCompare(b.title);
+				};
+			
+			case 'date-added':
+			default:
+				return (a: LocalRecommendation, b: LocalRecommendation) => 
+					multiplier * (a.created_at - b.created_at);
+		}
 	}
 
 	function handleSearch(query: string) {
@@ -534,27 +585,63 @@
 		});
 	}
 
-	function handleEnrichmentSelect(suggestion: any) {
+	async function handleEnrichmentSelect(suggestion: any) {
 		formTitle = suggestion.title;
 		formMetadata = suggestion.metadata;
 
-		// Auto-fill description if available
-		if (suggestion.metadata?.overview && !formDescription) {
-			formDescription = suggestion.metadata.overview;
-		} else if (suggestion.metadata?.description && !formDescription) {
-			formDescription = suggestion.metadata.description;
-		} else if (suggestion.metadata?.artist && !formDescription) {
-			// For songs, show artist and album info
-			const parts = [];
-			if (suggestion.metadata.artist) parts.push(`Artist: ${suggestion.metadata.artist}`);
-			if (suggestion.subtitle) parts.push(suggestion.subtitle);
-			if (suggestion.metadata.genres && suggestion.metadata.genres.length > 0) {
-				parts.push(`Genres: ${suggestion.metadata.genres.join(', ')}`);
+		// Auto-fill description if available - don't override existing description
+		if (!formDescription) {
+			let rawDescription = '';
+			if (suggestion.metadata?.overview) {
+				rawDescription = suggestion.metadata.overview;
+			} else if (suggestion.metadata?.description) {
+				rawDescription = suggestion.metadata.description;
+			} else if (suggestion.metadata?.artist || (suggestion.metadata?.genres && suggestion.metadata.genres.length > 0)) {
+				// For songs and artists, build a rich description
+				const parts = [];
+				
+				if (suggestion.metadata.artist) {
+					parts.push(`Artist: ${suggestion.metadata.artist}`);
+				}
+				
+				if (suggestion.subtitle && !suggestion.subtitle.includes(suggestion.metadata?.artist || '')) {
+					parts.push(suggestion.subtitle);
+				}
+				
+				if (suggestion.metadata.genres && suggestion.metadata.genres.length > 0) {
+					parts.push(`Genres: ${suggestion.metadata.genres.join(', ')}`);
+				}
+				
+				if (suggestion.metadata.year) {
+					parts.push(`Year: ${suggestion.metadata.year}`);
+				}
+				
+				if (parts.length > 0) {
+					rawDescription = parts.join(' • ');
+				}
 			}
-			formDescription = parts.join(' • ');
-		} else if (suggestion.metadata?.genres && suggestion.metadata.genres.length > 0 && !formDescription) {
-			// For artists, show genres
-			formDescription = `Genres: ${suggestion.metadata.genres.join(', ')}`;
+
+			if (rawDescription && rawDescription.length > 156) {
+				try {
+					const response = await fetch('/api/ai/condense-summary', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ text: rawDescription })
+					});
+					
+					if (response.ok) {
+						const { condensed } = await response.json();
+						formDescription = condensed;
+					} else {
+						formDescription = rawDescription.substring(0, 153) + '...';
+					}
+				} catch (error) {
+					console.error('Failed to condense description:', error);
+					formDescription = rawDescription.substring(0, 153) + '...';
+				}
+			} else if (rawDescription) {
+				formDescription = rawDescription;
+			}
 		}
 
 		// Ensure we have an image for the recommendation
@@ -562,7 +649,7 @@
 			if (!formMetadata) {
 				formMetadata = {};
 			}
-			if (!formMetadata.poster_url && !formMetadata.thumbnail_url && !formMetadata.cover_url) {
+			if (!formMetadata.poster_url && !formMetadata.thumbnail_url && !formMetadata.cover_url && !formMetadata.album_art) {
 				formMetadata.thumbnail_url = suggestion.thumbnail;
 			}
 		}
@@ -969,7 +1056,21 @@
 </script>
 
 <div class="min-h-screen bg-background-light dark:bg-background-dark">
-	<div class="mx-auto max-w-4xl px-4 py-8 pb-20">
+	<!-- Mobile Sticky Header with Logo -->
+	{#if isScrolled}
+		<div class="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-surface-dark shadow-md border-b border-black/5 dark:border-white/5 px-4 py-3 flex items-center justify-between">
+			<img
+				src="/Listo_Logo_IntentionalChill.svg"
+				alt="Listo"
+				class="h-8"
+			/>
+			<div class="flex items-center gap-2">
+				<ThemeToggle />
+			</div>
+		</div>
+	{/if}
+	
+	<div class="mx-auto max-w-4xl px-4 py-8 pb-20 {isScrolled ? 'pt-20 md:pt-8' : ''}">
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
 		<div class="sticky top-0 z-40 bg-background-light dark:bg-background-dark py-4 -mt-4 mb-4 sm:static sm:py-0 sm:mt-0">
 			<div class="flex items-center justify-end gap-2">
@@ -1268,15 +1369,26 @@
 		<div class="mb-8 flex justify-center gap-2">
 			<button
 				onclick={() => (showCompleted = false)}
-				class="px-4 py-2 text-sm rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
+				class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors {!showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
+				title="Active recommendations"
 			>
-				Active ({recommendations.length})
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+				</svg>
+				<span class="hidden sm:inline">Active</span>
+				<span class="text-xs opacity-75">({recommendations.length})</span>
 			</button>
 			<button
 				onclick={() => (showCompleted = true)}
-				class="px-4 py-2 text-sm rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
+				class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors {showCompleted ? 'bg-primary/20 text-text dark:text-white font-medium' : 'text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5'}"
+				title="Completed recommendations"
 			>
-				Completed ({completedRecs.length})
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+					<polyline points="22 4 12 14.01 9 11.01"></polyline>
+				</svg>
+				<span class="hidden sm:inline">Completed</span>
+				<span class="text-xs opacity-75">({completedRecs.length})</span>
 			</button>
 		</div>
 
@@ -1324,7 +1436,7 @@
 		{/if}
 
 		<!-- Search and Filter -->
-		<div class="mb-8">
+		<div class="mb-8 space-y-4">
 			<SearchBar
 				bind:value={searchQuery}
 				bind:selectedCategory={selectedCategory}
@@ -1332,6 +1444,77 @@
 				onCategoryChange={handleCategoryChange}
 				placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
 			/>
+			
+			<!-- Sort and Layout Controls -->
+			<div class="flex items-center justify-between gap-4 text-sm">
+				<div class="flex items-center gap-2">
+					<span class="text-text-muted hidden sm:inline">Layout:</span>
+					<div class="flex gap-1 bg-surface-light dark:bg-surface-dark rounded-lg p-1">
+						<button
+							onclick={() => layoutMode = 'compact'}
+							class="p-1.5 rounded {layoutMode === 'compact' ? 'bg-primary/20 text-primary' : 'text-text-muted hover:text-text dark:hover:text-white'} transition-colors"
+							title="Compact list"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="8" y1="6" x2="21" y2="6"></line>
+								<line x1="8" y1="12" x2="21" y2="12"></line>
+								<line x1="8" y1="18" x2="21" y2="18"></line>
+								<line x1="3" y1="6" x2="3.01" y2="6"></line>
+								<line x1="3" y1="12" x2="3.01" y2="12"></line>
+								<line x1="3" y1="18" x2="3.01" y2="18"></line>
+							</svg>
+						</button>
+						<button
+							onclick={() => layoutMode = 'normal'}
+							class="p-1.5 rounded {layoutMode === 'normal' ? 'bg-primary/20 text-primary' : 'text-text-muted hover:text-text dark:hover:text-white'} transition-colors"
+							title="Normal view"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="8" y1="6" x2="21" y2="6"></line>
+								<line x1="8" y1="12" x2="21" y2="12"></line>
+								<line x1="8" y1="18" x2="21" y2="18"></line>
+								<rect x="3" y="4" width="3" height="4"></rect>
+								<rect x="3" y="10" width="3" height="4"></rect>
+								<rect x="3" y="16" width="3" height="4"></rect>
+							</svg>
+						</button>
+						<button
+							onclick={() => layoutMode = 'grid'}
+							class="p-1.5 rounded {layoutMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-text-muted hover:text-text dark:hover:text-white'} transition-colors"
+							title="Grid view"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect x="3" y="3" width="7" height="7"></rect>
+								<rect x="14" y="3" width="7" height="7"></rect>
+								<rect x="14" y="14" width="7" height="7"></rect>
+								<rect x="3" y="14" width="7" height="7"></rect>
+							</svg>
+						</button>
+					</div>
+				</div>
+				
+				<div class="flex items-center gap-2">
+					<span class="text-text-muted hidden sm:inline">Sort:</span>
+					<select
+						bind:value={sortBy}
+						onchange={() => applyFilters()}
+						class="px-3 py-1.5 rounded-lg bg-surface-light dark:bg-surface-dark text-text dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+					>
+						<option value="date-added">Date Added</option>
+						<option value="alphabetical">A-Z</option>
+						<option value="category">Category</option>
+					</select>
+					<button
+						onclick={() => { sortAscending = !sortAscending; applyFilters(); }}
+						class="p-1.5 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+						title={sortAscending ? 'Ascending' : 'Descending'}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform {sortAscending ? '' : 'rotate-180'}">
+							<path d="M12 5v14M19 12l-7 7-7-7"/>
+						</svg>
+					</button>
+				</div>
+			</div>
 		</div>
 
 		<!-- Floating Action Button -->
@@ -1367,7 +1550,7 @@
 									<button
 										type="button"
 										onclick={() => bulkMode = !bulkMode}
-										class="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+										class="text-xs px-3 py-1.5 rounded-lg bg-primary/20 text-primary font-semibold hover:bg-primary/30 transition-colors flex items-center gap-1 shadow-sm"
 										title="Toggle bulk add mode"
 									>
 										{bulkMode ? 'Single' : 'Bulk'}
@@ -1406,7 +1589,7 @@
 												type="button"
 												onclick={suggestCategory}
 												disabled={aiSuggesting || !formTitle.trim()}
-												class="text-xs px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+												class="text-xs px-2.5 py-1.5 rounded-lg bg-primary/20 text-primary font-semibold hover:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 shadow-sm"
 												title="AI suggest category based on title"
 											>
 												{#if aiSuggesting}
@@ -1431,7 +1614,7 @@
 														type="button"
 														data-category={cat}
 														onclick={() => formCategory = cat}
-														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-md scale-105' : 'bg-surface-light dark:bg-surface-dark text-text dark:text-white hover:bg-surface-light/80 dark:hover:bg-surface-dark/80'}"
+														class="flex-shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 {formCategory === cat ? 'bg-primary text-white shadow-lg scale-105 ring-2 ring-primary/30' : 'bg-surface-light dark:bg-surface-dark text-text dark:text-white hover:bg-primary/10 dark:hover:bg-primary/10'}"
 													>
 														{formatCategory(cat)}
 													</button>
@@ -1479,6 +1662,12 @@
 													onSelect={handleEnrichmentSelect}
 													placeholder={`Search for a ${formCategory}...`}
 													autofocus={true}
+													onkeydown={(e) => {
+														if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+															e.preventDefault();
+															saveRecommendation();
+														}
+													}}
 														/>
 											{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
 												<EnrichmentAutocomplete
@@ -1487,9 +1676,26 @@
 													onSelect={handleEnrichmentSelect}
 													placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
 													autofocus={true}
+													onkeydown={(e) => {
+														if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+															e.preventDefault();
+															saveRecommendation();
+														}
+													}}
 														/>
 											{:else}
-												<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus={true} />
+												<Input 
+													id="title" 
+													bind:value={formTitle} 
+													placeholder="Enter title..." 
+													autofocus={true}
+													onkeydown={(e) => {
+														if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+															e.preventDefault();
+															saveRecommendation();
+														}
+													}}
+												/>
 											{/if}
 											</div>
 										{/if}
@@ -1527,6 +1733,12 @@
 											bind:value={formSource}
 											placeholder="Who recommended this? (friend, podcast, article...)"
 											list="source-suggestions"
+											onkeydown={(e) => {
+												if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+													e.preventDefault();
+													saveRecommendation();
+												}
+											}}
 										/>
 										<datalist id="source-suggestions">
 											{#each sourceSuggestions as source}
@@ -1539,12 +1751,24 @@
 									</div>
 
 									<div>
-										<label
-											for="description"
-											class="mb-2 block text-sm font-medium text-text dark:text-white"
-										>
-											Notes (optional)
-										</label>
+										<div class="flex items-center justify-between mb-2">
+											<label
+												for="description"
+												class="block text-sm font-medium text-text dark:text-white"
+											>
+												Notes (optional)
+											</label>
+											{#if formDescription.trim()}
+												<button
+													type="button"
+													onclick={() => formDescription = ''}
+													class="text-xs text-text-muted hover:text-text dark:hover:text-white transition-colors"
+													title="Clear notes"
+												>
+													Clear
+												</button>
+											{/if}
+										</div>
 										<textarea
 											id="description"
 											bind:value={formDescription}
@@ -1559,6 +1783,55 @@
 											}}
 										></textarea>
 									</div>
+
+									{#if formMetadata && (formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art || formMetadata.year || formMetadata.genres || formMetadata.rating || formMetadata.artist)}
+										<div class="p-4 rounded-xl bg-surface-light dark:bg-surface-dark border border-black/5 dark:border-white/5">
+											<div class="text-sm font-medium text-text dark:text-white mb-3">Preview</div>
+											<div class="flex gap-4">
+												{#if formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art}
+													<img
+														src={formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art}
+														alt="Preview"
+														class="h-32 w-24 rounded object-cover flex-shrink-0"
+													/>
+												{/if}
+												<div class="flex-1 text-sm space-y-2">
+													{#if formMetadata.artist}
+														<div class="text-text dark:text-white">
+															<span class="text-text-muted">Artist:</span> {formMetadata.artist}
+														</div>
+													{/if}
+													{#if formMetadata.year}
+														<div class="text-text dark:text-white">
+															<span class="text-text-muted">Year:</span> {formMetadata.year}
+														</div>
+													{/if}
+													{#if formMetadata.rating}
+														<div class="text-text dark:text-white">
+															<span class="text-text-muted">Rating:</span> {formMetadata.rating}/100
+														</div>
+													{/if}
+													{#if formMetadata.genres && formMetadata.genres.length > 0}
+														<div class="text-text dark:text-white">
+															<span class="text-text-muted">Genres:</span>
+															<div class="flex gap-1 flex-wrap mt-1">
+																{#each formMetadata.genres.slice(0, 5) as genre}
+																	<span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+																		{genre}
+																	</span>
+																{/each}
+															</div>
+														</div>
+													{/if}
+													{#if formMetadata.runtime}
+														<div class="text-text dark:text-white">
+															<span class="text-text-muted">Runtime:</span> {formMetadata.runtime} min
+														</div>
+													{/if}
+												</div>
+											</div>
+										</div>
+									{/if}
 								</div>
 							</form>
 						</div>
@@ -1582,7 +1855,7 @@
 
 		<!-- Active Recommendations -->
 		{#if !showCompleted}
-			<div class="space-y-4">
+			<div class="{layoutMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}">
 				{#if filteredRecommendations.length === 0}
 					<div class="py-16 text-center">
 						<div class="mb-4">
@@ -1612,7 +1885,7 @@
 					</div>
 				{:else}
 					{#each filteredRecommendations as rec, index (rec.id)}
-						<Card class="hover:scale-[1.01] transition-transform {selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''}">
+						<Card class="{layoutMode === 'grid' ? 'hover:shadow-lg' : 'hover:scale-[1.01]'} transition-all {selectedCardIndex === index ? 'card-selected ring-2 ring-primary' : ''}">
 							{#if completingId === rec.id}
 								<!-- Complete Form -->
 								<div class="space-y-4">
@@ -1678,7 +1951,7 @@
 								<div
 									role="button"
 									tabindex="0"
-									class="flex items-start gap-4 cursor-pointer"
+									class="flex items-start gap-4 cursor-pointer {layoutMode === 'grid' ? 'flex-col' : ''}"
 									onclick={() => toggleCardExpansion(rec.id)}
 									onkeydown={(e) => {
 										if (e.key === 'Enter' || e.key === ' ') {
@@ -1691,12 +1964,12 @@
 										<img
 											src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
 											alt={rec.title}
-											class="h-32 w-24 rounded object-cover flex-shrink-0"
+											class="{layoutMode === 'grid' ? 'w-full h-48' : layoutMode === 'compact' ? 'h-20 w-16' : 'h-32 w-24'} rounded object-cover flex-shrink-0"
 											loading="lazy"
 											decoding="async"
 										/>
 									{/if}
-									<div class="flex-1 min-w-0">
+									<div class="flex-1 min-w-0 {layoutMode === 'grid' ? 'w-full' : ''}">
 										<div class="mb-1 flex items-center gap-2 flex-wrap">
 											<span class="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-text">
 												{formatCategory(rec.category)}
@@ -1706,14 +1979,8 @@
 													{rec.metadata.year}
 												</span>
 											{/if}
-											<span
-												class="rounded-full px-2 py-1 text-xs {rec.synced ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-secondary/20 text-text-muted'}"
-												title={rec.synced ? 'Synced' : 'Not synced'}
-											>
-												{rec.synced ? '✓' : '⏱'}
-											</span>
 										</div>
-										<h3 class="mb-1 text-lg font-semibold text-text dark:text-white">
+										<h3 class="mb-1 {layoutMode === 'compact' ? 'text-base' : 'text-lg'} font-semibold text-text dark:text-white">
 											{rec.title}
 										</h3>
 										{#if rec.source}
@@ -1780,8 +2047,8 @@
 										{/if}
 									</div>
 								{/if}
-								{#if rec.description}
-											<p class="text-sm text-text-muted {expandedCardId === rec.id ? '' : 'line-clamp-3'}">
+								{#if rec.description && (layoutMode !== 'compact' || expandedCardId === rec.id)}
+											<p class="text-sm text-text-muted {expandedCardId === rec.id ? '' : layoutMode === 'compact' ? 'line-clamp-1' : 'line-clamp-3'}">
 												{rec.description}
 											</p>
 										{/if}
@@ -1861,13 +2128,16 @@
 												<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
 											</svg>
 										</button>
-										<button
-											onclick={(e) => { e.stopPropagation(); startEdit(rec); }}
-											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
-											title="Edit"
-										>
-											✎
-										</button>
+									<button
+										onclick={(e) => { e.stopPropagation(); startEdit(rec); }}
+										class="rounded-lg p-2.5 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+										title="Edit"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+											<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+										</svg>
+									</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
 											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
@@ -1884,7 +2154,7 @@
 			</div>
 		{:else}
 			<!-- Completed Recommendations -->
-			<div class="space-y-4">
+			<div class="{layoutMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}">
 				{#if filteredCompletedRecs.length === 0}
 					<div class="py-16 text-center">
 						<div class="mb-4">
@@ -1958,7 +2228,7 @@
 											{/each}
 										</div>
 									{/if}
-									{#if rec.metadata?.genres && rec.metadata.genres.length > 0}
+									{#if rec.metadata?.genres && rec.metadata.genres.length > 0 && layoutMode !== 'compact'}
 										<div class="mb-2 flex gap-1 flex-wrap">
 											{#each rec.metadata.genres.slice(0, 3) as genre}
 												<span class="text-xs bg-surface-light dark:bg-surface-dark px-2 py-1 rounded">
@@ -2098,13 +2368,15 @@
 									>
 										↶
 									</button>
-									<button
-										onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
-										class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
-										title="Delete"
-									>
-										🗑
-									</button>
+									{#if expandedCardId === rec.id}
+										<button
+											onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
+											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+											title="Delete"
+										>
+											🗑
+										</button>
+									{/if}
 								</div>
 							</div>
 						</Card>

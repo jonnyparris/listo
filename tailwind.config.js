@@ -5,28 +5,28 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				// Lazy Days palette
+				// Lazy Days palette - darkened by 20%
 				primary: {
-					DEFAULT: '#BFE3D0',
-					light: '#D4EDE0',
-					dark: '#A6D4BD'
+					DEFAULT: '#99B6A8',
+					light: '#AABFB3',
+					dark: '#85AA97'
 				},
 				secondary: {
-					DEFAULT: '#F2C6A0',
-					light: '#F7D8BC',
-					dark: '#EAB584'
+					DEFAULT: '#C29E80',
+					light: '#C5AD96',
+					dark: '#BC916A'
 				},
 				background: {
-					light: '#FDFBF7',
-					dark: '#2C2C2B'
+					light: '#CAC9C6',
+					dark: '#232322'
 				},
 				text: {
-					DEFAULT: '#2B2B2B',
-					muted: '#6E6E6B'
+					DEFAULT: '#222222',
+					muted: '#585856'
 				},
 				surface: {
-					light: '#F5F3EF',
-					dark: '#3A3A38'
+					light: '#C4C3BF',
+					dark: '#2E2E2D'
 				}
 			},
 			fontFamily: {

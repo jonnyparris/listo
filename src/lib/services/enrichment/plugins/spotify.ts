@@ -238,7 +238,7 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 					runtime: Math.floor(track.duration_ms / 60000),
 					rating: track.popularity,
 					album_art: track.album.images[1]?.url || track.album.images[0]?.url,
-					spotify_link: track.external_urls.spotify
+					spotify_url: track.external_urls.spotify
 				}
 			};
 			}
@@ -267,7 +267,7 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 					genres: artist.genres,
 					rating: artist.popularity,
 					album_art: artist.images[1]?.url || artist.images[0]?.url,
-					spotify_link: artist.external_urls.spotify
+					spotify_url: artist.external_urls.spotify
 				}
 			};
 			}

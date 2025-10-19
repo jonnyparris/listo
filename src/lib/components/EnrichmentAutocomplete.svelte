@@ -9,6 +9,7 @@
 		onSelect?: (suggestion: SearchSuggestion) => void;
 		placeholder?: string;
 		autofocus?: boolean;
+		onkeydown?: (event: KeyboardEvent) => void;
 	}
 
 	let {
@@ -16,13 +17,15 @@
 		category,
 		onSelect,
 		placeholder = 'Search...',
-		autofocus = false
+		autofocus = false,
+		onkeydown
 	}: Props = $props();
 
 	let suggestions = $state<SearchSuggestion[]>([]);
 	let showSuggestions = $state(false);
 	let loading = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
+	let selectedIndex = $state(-1);
 
 	async function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -34,6 +37,7 @@
 		if (value.length < 2) {
 			suggestions = [];
 			showSuggestions = false;
+			selectedIndex = -1;
 			return;
 		}
 
@@ -51,6 +55,7 @@
 			if (response.ok) {
 				suggestions = await response.json();
 				showSuggestions = true;
+				selectedIndex = -1;
 			}
 		} catch (error) {
 			console.error('Search error:', error);
@@ -62,6 +67,8 @@
 	async function selectSuggestion(suggestion: SearchSuggestion) {
 		value = suggestion.title;
 		showSuggestions = false;
+		suggestions = [];
+		selectedIndex = -1;
 
 		// Fetch full metadata for the selected item
 		try {
@@ -69,9 +76,13 @@
 				`/api/enrichment/enrich?id=${suggestion.id}&category=${category}`
 			);
 			if (response.ok) {
-			const enrichedData = await response.json();
-			// Pass the suggestion title along with enriched metadata
-			onSelect?.(suggestion);
+				const enrichedMetadata = await response.json();
+				// Merge enriched metadata with suggestion
+				const enrichedSuggestion = {
+					...suggestion,
+					metadata: enrichedMetadata
+				};
+				onSelect?.(enrichedSuggestion);
 			} else {
 				// Fallback to basic suggestion
 				onSelect?.(suggestion);
@@ -83,15 +94,34 @@
 	}
 
 	function handleBlur() {
-		// Delay to allow click on suggestion
 		setTimeout(() => {
 			showSuggestions = false;
-		}, 200);
+		}, 150);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			showSuggestions = false;
+			selectedIndex = -1;
+			return;
+		}
+
+		if (!showSuggestions || suggestions.length === 0) {
+			onkeydown?.(e);
+			return;
+		}
+
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			selectedIndex = Math.max(selectedIndex - 1, -1);
+		} else if (e.key === 'Enter' && selectedIndex >= 0) {
+			e.preventDefault();
+			selectSuggestion(suggestions[selectedIndex]);
+		} else {
+			onkeydown?.(e);
 		}
 	}
 
@@ -134,11 +164,15 @@
 		<div
 			class="absolute z-10 mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-card max-h-64 overflow-y-auto"
 		>
-			{#each suggestions as suggestion (suggestion.id)}
+			{#each suggestions as suggestion, index (suggestion.id)}
 				<button
 					type="button"
-					onclick={() => selectSuggestion(suggestion)}
-					class="flex w-full items-start gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+					onmousedown={(e) => {
+						e.preventDefault();
+						selectSuggestion(suggestion);
+					}}
+					onmouseenter={() => selectedIndex = index}
+					class="flex w-full items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 {selectedIndex === index ? 'bg-primary/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}"
 				>
 				{#if suggestion.thumbnail}
 					<img
