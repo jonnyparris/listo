@@ -960,7 +960,7 @@
 			<div class="flex items-center justify-end gap-2">
 			<button
 				onclick={() => (showKeyboardHelp = true)}
-				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center"
+				class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
 				title="Keyboard shortcuts (?)"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -972,7 +972,7 @@
 			<button
 				onclick={handleSync}
 				disabled={syncing || !isAuthenticated}
-				class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+				class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[44px] min-w-[44px]"
 				title={!isAuthenticated ? 'Sign in to sync' : syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
 			>
 				<svg
@@ -995,7 +995,7 @@
 			<div class="relative">
 				<button
 					onclick={() => (showSettingsMenu = !showSettingsMenu)}
-					class="p-2 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center"
+					class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
 					title="Settings"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1233,7 +1233,7 @@
 							</div>
 							<button
 								onclick={() => resetForm()}
-								class="p-2 text-text-muted hover:text-text dark:hover:text-white transition-colors rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10"
+								class="p-3 text-text-muted hover:text-text dark:hover:text-white transition-colors rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
 								aria-label="Close"
 							>
 								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1311,7 +1311,6 @@
 												placeholder="Enter multiple titles, one per line...&#10;Example:&#10;The Matrix&#10;Inception&#10;Interstellar"
 												class="w-full rounded-xl border border-black/5 dark:border-white/5 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
 												rows="10"
-												autofocus
 											></textarea>
 											<p class="mt-1 text-xs text-text-muted">
 												Enter one title per line. They'll all be saved in the {formatCategory(formCategory)} category.
@@ -1336,18 +1335,16 @@
 														category={formCategory}
 														onSelect={handleEnrichmentSelect}
 														placeholder={`Search for a ${formCategory}...`}
-														autofocus
-													/>
+															/>
 												{:else if formCategory === 'book' || formCategory === 'graphic-novel' || formCategory === 'youtube' || formCategory === 'artist' || formCategory === 'song'}
 													<EnrichmentAutocomplete
 														bind:value={formTitle}
 														category={formCategory}
 														onSelect={handleEnrichmentSelect}
 														placeholder={`Search for a ${formatCategory(formCategory).toLowerCase()}...`}
-														autofocus
-													/>
+															/>
 												{:else}
-													<Input id="title" bind:value={formTitle} placeholder="Enter title..." autofocus />
+													<Input id="title" bind:value={formTitle} placeholder="Enter title..." />
 												{/if}
 											</div>
 										{/if}
@@ -1644,11 +1641,11 @@
 										{/if}
 									</div>
 
-									<div class="flex gap-1 sm:gap-2 flex-shrink-0 items-start flex-col sm:flex-row">
+									<div class="flex gap-2 flex-shrink-0 items-start flex-col sm:flex-row">
 										<!-- Expand/Collapse indicator -->
 										<button
 											onclick={(e) => { e.stopPropagation(); toggleCardExpansion(rec.id); }}
-											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+											class="rounded-lg p-2.5 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 											title={expandedCardId === rec.id ? "Show less" : "Show more"}
 										>
 											<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1657,14 +1654,14 @@
 										</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); startComplete(rec); }}
-											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-primary hover:bg-primary/10 transition-colors"
+											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-primary hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 											title="Mark as completed"
 										>
 											✓
 										</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
-											class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+											class="rounded-lg p-2.5 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 											title="Share"
 										>
 											<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1677,14 +1674,14 @@
 										</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); startEdit(rec); }}
-											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 											title="Edit"
 										>
 											✎
 										</button>
 										<button
 											onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
-											class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+											class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 											title="Delete"
 										>
 											🗑
@@ -1852,11 +1849,11 @@
 									{/if}
 								</div>
 
-								<div class="flex gap-1 sm:gap-2 flex-shrink-0 items-start flex-col sm:flex-row">
+								<div class="flex gap-2 flex-shrink-0 items-start flex-col sm:flex-row">
 									<!-- Expand/Collapse indicator -->
 									<button
 										onclick={(e) => { e.stopPropagation(); toggleCardExpansion(rec.id); }}
-										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+										class="rounded-lg p-2.5 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 										title={expandedCardId === rec.id ? "Show less" : "Show more"}
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1865,7 +1862,7 @@
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); shareRecommendation(rec); }}
-										class="rounded-lg p-2 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+										class="rounded-lg p-2.5 sm:p-1.5 text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 										title="Share"
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1878,14 +1875,14 @@
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); uncompleteRecommendation(rec.id); }}
-										class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors"
+										class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-text-muted hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 										title="Move back to active"
 									>
 										↶
 									</button>
 									<button
 										onclick={(e) => { e.stopPropagation(); deleteRecommendation(rec.id); }}
-										class="rounded-lg p-2 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+										class="rounded-lg p-2.5 sm:p-1.5 text-lg sm:text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
 										title="Delete"
 									>
 										🗑
@@ -1904,6 +1901,7 @@
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="keyboard-shortcuts-title"
+				tabindex="-1"
 				class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
 				onclick={() => (showKeyboardHelp = false)}
 				onkeydown={(e) => {
@@ -1914,9 +1912,8 @@
 			>
 				<div
 					role="document"
-					class="bg-white dark:bg-surface-dark rounded-2xl shadow-xl max-w-2xl w-full p-8 max-h-[80vh] overflow-y-auto"
+					class="bg-white dark:bg-surface-dark rounded-2xl shadow-xl max-w-2xl w-full p-4 sm:p-8 max-h-[80vh] overflow-y-auto"
 					onclick={(e) => e.stopPropagation()}
-					onkeydown={(e) => e.stopPropagation()}
 				>
 					<div class="flex items-center justify-between mb-6 pb-4 border-b border-black/5 dark:border-white/5">
 						<h2 id="keyboard-shortcuts-title" class="text-2xl font-semibold text-text dark:text-white">Keyboard Shortcuts</h2>

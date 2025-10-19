@@ -80,18 +80,18 @@
 					{/if}
 					<div class="flex gap-2">
 						{#if !isIOS}
-							<Button onclick={handleInstall} variant="primary" size="sm">
+							<Button onclick={handleInstall} variant="primary" size="md">
 								Install
 							</Button>
 						{/if}
-						<Button onclick={handleDismiss} variant="ghost" size="sm">
+						<Button onclick={handleDismiss} variant="ghost" size="md">
 							{isIOS ? 'Got it' : 'Not now'}
 						</Button>
 					</div>
 				</div>
 				<button
 					onclick={handleDismiss}
-					class="flex-shrink-0 text-text-muted hover:text-text dark:hover:text-white transition-colors"
+					class="flex-shrink-0 text-text-muted hover:text-text dark:hover:text-white transition-colors p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-primary/5"
 					aria-label="Close"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
