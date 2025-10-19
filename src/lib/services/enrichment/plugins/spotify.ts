@@ -31,6 +31,16 @@ interface SpotifySearchResponse {
 			followers: { total: number };
 		}>;
 	};
+	shows?: {
+		items: Array<{
+			id: string;
+			name: string;
+			publisher: string;
+			description: string;
+			images: Array<{ url: string; height: number; width: number }>;
+			external_urls: { spotify: string };
+		}>;
+	};
 }
 
 interface SpotifyTrackDetails {
@@ -65,7 +75,7 @@ interface SpotifyArtistDetails {
  */
 export class SpotifyPlugin implements EnrichmentPlugin {
 	name = 'Spotify';
-	supportedCategories: Category[] = ['artist', 'song', 'genre'];
+	supportedCategories: Category[] = ['artist', 'song', 'genre', 'podcast'];
 	private clientId: string;
 	private clientSecret: string;
 	private accessToken: string | null = null;
@@ -124,6 +134,8 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 			} else if (category === 'genre') {
 				// For genres, search both tracks and artists
 				type = 'track,artist';
+			} else if (category === 'podcast') {
+				type = 'show';
 			} else {
 				return [];
 			}
@@ -194,6 +206,16 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 			}
 
 			return results;
+		}
+
+		// Handle podcast search
+		if (category === 'podcast' && data.shows) {
+			return data.shows.items.slice(0, 5).map((show) => ({
+				id: show.id,
+				title: show.name,
+				subtitle: `by ${show.publisher}`,
+				thumbnail: show.images[2]?.url || show.images[0]?.url
+			}));
 		}
 
 			return [];
@@ -270,6 +292,35 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 					spotify_url: artist.external_urls.spotify
 				}
 			};
+			}
+
+			if (category === 'podcast') {
+				// Fetch podcast/show details
+				const response = await fetch(`https://api.spotify.com/v1/shows/${id}`, {
+					headers: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+
+				if (!response.ok) {
+					return {
+						success: false,
+						error: `Failed to fetch podcast details: ${response.statusText}`
+					};
+				}
+
+				const show: any = await response.json();
+
+				return {
+					success: true,
+					metadata: {
+						type: 'podcast',
+						publisher: show.publisher,
+						description: show.description,
+						thumbnail_url: show.images[1]?.url || show.images[0]?.url,
+						spotify_url: show.external_urls.spotify
+					}
+				};
 			}
 
 			return {
