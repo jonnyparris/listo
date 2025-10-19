@@ -9,17 +9,18 @@ import {
 } from './plugins/stubs';
 import type { EnrichmentPlugin, EnrichmentResult, SearchSuggestion } from './types';
 
-export class EnrichmentService {
-	private plugins: Map<Category, EnrichmentPlugin> = new Map();
-
-	constructor(apiKeys: { tmdb?: string; youtube?: string; spotify_client_id?: string; spotify_client_secret?: string } = {}) {
-		// Register TMDB plugin if API key is available
-		if (apiKeys.tmdb) {
-			const tmdbPlugin = new TMDBPlugin(apiKeys.tmdb);
-			for (const category of tmdbPlugin.supportedCategories) {
-				this.plugins.set(category, tmdbPlugin);
+	export class EnrichmentService {
+		private plugins: Map<Category, EnrichmentPlugin> = new Map();
+	
+		constructor(apiKeys: { tmdb?: string; youtube?: string; spotify_client_id?: string; spotify_client_secret?: string; omdb?: string } = {}) {
+			// Register TMDB plugin if API key is available
+			if (apiKeys.tmdb) {
+				const tmdbPlugin = new TMDBPlugin(apiKeys.tmdb, apiKeys.omdb);
+				for (const category of tmdbPlugin.supportedCategories) {
+					this.plugins.set(category, tmdbPlugin);
+				}
 			}
-		}
+
 
 		// Register Books plugin (no API key required)
 		const booksPlugin = new BooksPlugin();
@@ -92,6 +93,6 @@ export class EnrichmentService {
 }
 
 // Export for use in API routes (server-side)
-export function createEnrichmentService(apiKeys: { tmdb?: string; youtube?: string; spotify_client_id?: string; spotify_client_secret?: string }): EnrichmentService {
+export function createEnrichmentService(apiKeys: { tmdb?: string; youtube?: string; spotify_client_id?: string; spotify_client_secret?: string; omdb?: string }): EnrichmentService {
 	return new EnrichmentService(apiKeys);
 }

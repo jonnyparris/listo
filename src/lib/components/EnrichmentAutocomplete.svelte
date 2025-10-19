@@ -94,6 +94,17 @@
 			showSuggestions = false;
 		}
 	}
+
+	// Refresh suggestions when category changes
+	$effect(() => {
+		if (value.length >= 2) {
+			searchEnrichment(value);
+			showSuggestions = true;
+		} else {
+			suggestions = [];
+			showSuggestions = false;
+		}
+	});
 </script>
 
 <div class="relative enrichment-autocomplete-container">

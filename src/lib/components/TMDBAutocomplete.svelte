@@ -107,6 +107,17 @@
 			showSuggestions = false;
 		}
 	}
+
+	// Refresh suggestions when category changes
+	$effect(() => {
+		if (value.length >= 2 && ['movie','show'].includes(category)) {
+			searchTMDB(value);
+			showSuggestions = true;
+		} else if (value.length < 2) {
+			suggestions = [];
+			showSuggestions = false;
+		}
+	});
 </script>
 
 <div class="relative tmdb-autocomplete-container">

@@ -8,9 +8,11 @@ export class TMDBPlugin implements EnrichmentPlugin {
 	private apiKey: string;
 	private baseUrl = 'https://api.themoviedb.org/3';
 	private imageBaseUrl = 'https://image.tmdb.org/t/p/w500';
+	private omdbApiKey?: string;
 
-	constructor(apiKey: string) {
+	constructor(apiKey: string, omdbApiKey?: string) {
 		this.apiKey = apiKey;
+		this.omdbApiKey = omdbApiKey;
 	}
 
 	async search(query: string, category: Category): Promise<SearchSuggestion[]> {
@@ -117,6 +119,28 @@ export class TMDBPlugin implements EnrichmentPlugin {
 					overview: data.overview
 				};
 
+				// Optionally fetch Rotten Tomatoes score via OMDb
+				try {
+					const imdbId = data.external_ids?.imdb_id;
+					if (this.omdbApiKey && imdbId) {
+						const omdbResp = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${this.omdbApiKey}`);
+						if (omdbResp.ok) {
+							const omdb = await omdbResp.json();
+							if (Array.isArray(omdb.Ratings)) {
+								const rt = omdb.Ratings.find((r: any) => r.Source === 'Rotten Tomatoes');
+								if (rt?.Value) {
+									const pct = parseInt(String(rt.Value).replace('%',''), 10);
+									if (!isNaN(pct)) {
+										metadata.rt_score = pct;
+									}
+								}
+							}
+						}
+					}
+				} catch {
+					// ignore OMDb failures
+				}
+
 				return {
 					success: true,
 					metadata
@@ -131,6 +155,28 @@ export class TMDBPlugin implements EnrichmentPlugin {
 					genres: data.genres?.map((g: any) => g.name),
 					overview: data.overview
 				};
+
+				// Optionally fetch Rotten Tomatoes score via OMDb
+				try {
+					const imdbId = data.external_ids?.imdb_id;
+					if (this.omdbApiKey && imdbId) {
+						const omdbResp = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${this.omdbApiKey}`);
+						if (omdbResp.ok) {
+							const omdb = await omdbResp.json();
+							if (Array.isArray(omdb.Ratings)) {
+								const rt = omdb.Ratings.find((r: any) => r.Source === 'Rotten Tomatoes');
+								if (rt?.Value) {
+									const pct = parseInt(String(rt.Value).replace('%',''), 10);
+									if (!isNaN(pct)) {
+										metadata.rt_score = pct;
+									}
+								}
+							}
+						}
+					}
+				} catch {
+					// ignore OMDb failures
+				}
 
 				return {
 					success: true,

@@ -26,6 +26,11 @@ Listo supports several external APIs to enrich your recommendations with metadat
   - Used for: Artists, Songs, Genres
   - Provides: Album art, artist info, Spotify links, popularity scores
 
+- **OMDb API** - Additional movie/show ratings (optional)
+  - Used for: Movies, TV Shows (Rotten Tomatoes ratings)
+  - Provides: Rotten Tomatoes scores, additional metadata
+  - Note: Requires TMDB API to be configured first
+
 ## Setup Instructions
 
 ### 1. TMDB API Key
@@ -90,7 +95,27 @@ echo "SPOTIFY_CLIENT_ID=your_client_id_here" >> .env
 echo "SPOTIFY_CLIENT_SECRET=your_client_secret_here" >> .env
 ```
 
-### 4. Environment File Template
+### 4. OMDb API Key (Optional - for Rotten Tomatoes Ratings)
+
+**Get your API key:**
+1. Visit [OMDb API](https://www.omdbapi.com/apikey.aspx)
+2. Choose the free tier (1,000 requests per day)
+3. Enter your email address
+4. Verify your email
+5. Copy your API key from the verification email
+
+**Add to your project:**
+```bash
+# Add to .env file
+echo "OMDB_API_KEY=your_api_key_here" >> .env
+```
+
+**What this enables:**
+- Rotten Tomatoes scores on movie and TV show cards
+- Additional metadata from IMDb/OMDb
+- Works alongside TMDB (both APIs needed)
+
+### 5. Environment File Template
 
 Create a `.env` file in your project root with the following structure:
 
@@ -107,6 +132,10 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 # Get your credentials at: https://developer.spotify.com/dashboard
 SPOTIFY_CLIENT_ID=your_client_id_here
 SPOTIFY_CLIENT_SECRET=your_client_secret_here
+
+# OMDb API (Optional - for Rotten Tomatoes ratings)
+# Get your key at: https://www.omdbapi.com/apikey.aspx
+OMDB_API_KEY=your_omdb_api_key_here
 ```
 
 ## Deployment (Cloudflare Pages)
@@ -124,6 +153,8 @@ For production deployment, you'll need to add these environment variables to you
    - Value: Your Spotify Client ID
    - Variable name: `SPOTIFY_CLIENT_SECRET`
    - Value: Your Spotify Client Secret
+   - Variable name: `OMDB_API_KEY` (optional)
+   - Value: Your OMDb API key
 4. Save and redeploy
 
 ## Feature Availability Without API Keys
@@ -131,6 +162,7 @@ For production deployment, you'll need to add these environment variables to you
 | Feature | Without API Key | With API Key |
 |---------|----------------|--------------|
 | Movies/Shows autocomplete | ❌ Manual entry only | ✅ Search TMDB database |
+| Rotten Tomatoes ratings | ❌ Not available | ✅ With OMDb API key |
 | YouTube autocomplete | ❌ Manual entry only | ✅ Search videos |
 | Music autocomplete | ❌ Manual entry only | ✅ Search Spotify |
 | Books autocomplete | ✅ Works perfectly! | ✅ Works perfectly! |
@@ -179,6 +211,7 @@ For production deployment, you'll need to add these environment variables to you
 All the APIs used in Listo have generous free tiers:
 
 - **TMDB**: Free (no limits for personal use)
+- **OMDb**: Free up to 1,000 requests/day
 - **YouTube Data API**: Free up to 10,000 units/day
 - **Spotify Web API**: Free (no limits for personal use with Client Credentials flow)
 - **Google Books**: Free (no API key required)

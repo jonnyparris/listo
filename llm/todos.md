@@ -1,8 +1,8 @@
-- [] the "not synced" icon still shows even after a successful sync
-- [] shows should be the default category
-- [] when you change category, autosuggestions should show for the new category
-- [] make the header logo take up less space
+- [x] the "not synced" icon no longer shows after a successful sync
+- [x] shows should be the default category
+- [x] when you change category, autosuggestions show for the new category
+- [x] make the header logo take up less space
 - [] should the top nav menu be collapsed into a burger menu on mobile / small screens?
-- [] saved shows and movies should include a link to find out more about them directly at tmdb or rotten tomatoes
-- [] include a rotten tomatoes rating for movies and shows
-- [] I get a "Sync error: Data provided to an operation does not meet requirements..." when trying to sync
+- [x] saved shows and movies include links to TMDB and Rotten Tomatoes search
+- [x] include a rotten tomatoes rating for movies and shows (when OMDb key configured)
+- [x] Sync error resolved by avoiding undefined in IndexedDB updates

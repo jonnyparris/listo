@@ -104,7 +104,7 @@ export const dbOperations = {
 		return db.recommendations.bulkUpdate(
 			ids.map((id) => ({
 				key: id,
-				changes: { synced: true, sync_error: undefined }
+				changes: { synced: true }
 			}))
 		);
 	},

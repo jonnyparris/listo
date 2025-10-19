@@ -16,12 +16,14 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 	const youtubeKey = platform?.env?.YOUTUBE_API_KEY || YOUTUBE_API_KEY || '';
 	const spotifyClientId = platform?.env?.SPOTIFY_CLIENT_ID || SPOTIFY_CLIENT_ID || '';
 	const spotifyClientSecret = platform?.env?.SPOTIFY_CLIENT_SECRET || SPOTIFY_CLIENT_SECRET || '';
+	const omdbKey = ((platform?.env as any)?.OMDB_API_KEY as string) || '';
 
 	const enrichmentService = createEnrichmentService({
 		tmdb: tmdbKey,
 		youtube: youtubeKey,
 		spotify_client_id: spotifyClientId,
-		spotify_client_secret: spotifyClientSecret
+		spotify_client_secret: spotifyClientSecret,
+		omdb: omdbKey
 	});
 
 	try {

@@ -55,6 +55,9 @@
 
 	// Settings menu
 	let showSettingsMenu = $state(false);
+	
+	// Mobile menu
+	let showMobileMenu = $state(false);
 
 	// Sync state
 	let syncing = $state(false);
@@ -258,11 +261,14 @@
 
 		window.addEventListener('keydown', handleKeydown);
 
-		// Close settings menu when clicking outside
+		// Close settings/mobile menu when clicking outside
 		const handleClickOutside = (e: MouseEvent) => {
 			const target = e.target as HTMLElement;
-			if (showSettingsMenu && !target.closest('.relative')) {
+			if (showSettingsMenu && !target.closest('.settings-menu-container')) {
 				showSettingsMenu = false;
+			}
+			if (showMobileMenu && !target.closest('.mobile-menu-container')) {
+				showMobileMenu = false;
 			}
 		};
 
@@ -506,7 +512,7 @@
 		formTitle = '';
 		formDescription = '';
 		formSource = '';
-		formCategory = 'movie';
+		formCategory = 'show';
 		formMetadata = undefined;
 		bulkMode = false;
 		bulkTitles = '';
@@ -895,14 +901,10 @@
 		
 		enrichmentLoading = true;
 		try {
-			const response = await fetch('/api/enrichment/search', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query: formTitle, category: formCategory })
-			});
+			const response = await fetch(`/api/enrichment/search?query=${encodeURIComponent(formTitle)}&category=${formCategory}`);
 			
 			if (response.ok) {
-				const { suggestions } = await response.json();
+				const suggestions = await response.json();
 				if (suggestions && suggestions.length > 0) {
 					// Auto-select the top match if it's a close match
 					const topMatch = suggestions[0];
@@ -960,141 +962,268 @@
 		<!-- Theme Toggle, Sync, Help, Settings, and Auth (top right) -->
 		<div class="sticky top-0 z-40 bg-background-light dark:bg-background-dark py-4 -mt-4 mb-4 sm:static sm:py-0 sm:mt-0">
 			<div class="flex items-center justify-end gap-2">
-			<button
-				onclick={() => (showKeyboardHelp = true)}
-				class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
-				title="Keyboard shortcuts (?)"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="10"></circle>
-					<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-					<line x1="12" y1="17" x2="12.01" y2="17"></line>
-				</svg>
-			</button>
-			<button
-				onclick={handleSync}
-				disabled={syncing || !isAuthenticated}
-				class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[44px] min-w-[44px]"
-				title={!isAuthenticated ? 'Sign in to sync' : syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="20"
-					height="20"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					class={syncing ? 'animate-spin' : ''}
-				>
-					<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-				</svg>
-			</button>
-
-			<!-- Settings Menu -->
-			<div class="relative">
-				<button
-					onclick={() => (showSettingsMenu = !showSettingsMenu)}
-					class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
-					title="Settings"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-						<circle cx="12" cy="12" r="3"></circle>
-					</svg>
-				</button>
-
-				{#if showSettingsMenu}
-					<div
-						role="menu"
-						tabindex="-1"
-						class="absolute right-0 mt-2 w-56 bg-white dark:bg-surface-dark rounded-xl shadow-lg border border-black/5 dark:border-white/5 py-2 z-50"
-						onclick={(e) => e.stopPropagation()}
-						onkeydown={(e) => {
-							if (e.key === 'Escape') {
-								showSettingsMenu = false;
-							}
-						}}
+				<!-- Desktop: show all controls -->
+				<div class="hidden md:flex items-center gap-2">
+					<button
+						onclick={() => (showKeyboardHelp = true)}
+						class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+						title="Keyboard shortcuts (?)"
 					>
-						{#if isAuthenticated}
-							<div class="px-4 py-2 text-xs text-text-muted border-b border-black/5 dark:border-white/5">
-								Signed in
-							</div>
-							<button
-								onclick={() => {
-									handleSignOut();
-									showSettingsMenu = false;
-								}}
-								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-							>
-								Sign Out
-							</button>
-							<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
-						{/if}
-						<button
-							onclick={() => {
-								goto('/about');
-								showSettingsMenu = false;
-							}}
-							class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+							<line x1="12" y1="17" x2="12.01" y2="17"></line>
+						</svg>
+					</button>
+					<button
+						onclick={handleSync}
+						disabled={syncing || !isAuthenticated}
+						class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[44px] min-w-[44px]"
+						title={!isAuthenticated ? 'Sign in to sync' : syncing ? 'Syncing...' : lastSyncError ? `Sync error: ${lastSyncError}` : 'Sync with server'}
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class={syncing ? 'animate-spin' : ''}
 						>
-							About Listo
-						</button>
-						<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
-						<div class="px-4 py-2">
-							<div class="text-xs font-semibold text-text dark:text-white mb-1">Data Management</div>
-							<div class="text-xs text-text-muted mb-3">Backup your recommendations or migrate between devices</div>
-							<button
-								onclick={() => {
-									handleExport();
-									showSettingsMenu = false;
-								}}
-								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg mb-1"
-							>
-								Export Data
-								<div class="text-xs text-text-muted mt-0.5">Download all your recommendations as JSON</div>
-							</button>
-							<button
-								onclick={() => {
-									handleImport();
-									showSettingsMenu = false;
-								}}
-								class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg"
-							>
-								Import Data
-								<div class="text-xs text-text-muted mt-0.5">Restore from a previous export file</div>
-							</button>
-						</div>
-						<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
-						<button
-							onclick={() => {
-								handlePurgeAll();
-								showSettingsMenu = false;
-							}}
-							class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-						>
-							Purge All Data
-						</button>
-					</div>
-				{/if}
-			</div>
+							<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+						</svg>
+					</button>
 
-			{#if !isAuthenticated}
-				<button
-					onclick={() => goto('/auth')}
-					class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
-					title="Sign in to sync across devices"
-				>
-					Sign In
-				</button>
-			{:else}
-				<div class="flex items-center gap-2">
-					<span class="text-xs text-text-muted px-2">Signed In</span>
+					<!-- Desktop Settings Menu -->
+					<div class="relative settings-menu-container">
+						<button
+							onclick={() => (showSettingsMenu = !showSettingsMenu)}
+							class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+							title="Settings"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+								<circle cx="12" cy="12" r="3"></circle>
+							</svg>
+						</button>
+
+						{#if showSettingsMenu}
+							<div
+								role="menu"
+								tabindex="-1"
+								class="absolute right-0 mt-2 w-56 bg-white dark:bg-surface-dark rounded-xl shadow-lg border border-black/5 dark:border-white/5 py-2 z-50"
+								onclick={(e) => e.stopPropagation()}
+								onkeydown={(e) => {
+									if (e.key === 'Escape') {
+										showSettingsMenu = false;
+									}
+								}}
+							>
+								{#if isAuthenticated}
+									<div class="px-4 py-2 text-xs text-text-muted border-b border-black/5 dark:border-white/5">
+										Signed in
+									</div>
+									<button
+										onclick={() => {
+											handleSignOut();
+											showSettingsMenu = false;
+										}}
+										class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+									>
+										Sign Out
+									</button>
+									<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								{/if}
+								<button
+									onclick={() => {
+										goto('/about');
+										showSettingsMenu = false;
+									}}
+									class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+								>
+									About Listo
+								</button>
+								<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								<div class="px-4 py-2">
+									<div class="text-xs font-semibold text-text dark:text-white mb-1">Data Management</div>
+									<div class="text-xs text-text-muted mb-3">Backup your recommendations or migrate between devices</div>
+									<button
+										onclick={() => {
+											handleExport();
+											showSettingsMenu = false;
+										}}
+										class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg mb-1"
+									>
+										Export Data
+										<div class="text-xs text-text-muted mt-0.5">Download all your recommendations as JSON</div>
+									</button>
+									<button
+										onclick={() => {
+											handleImport();
+											showSettingsMenu = false;
+										}}
+										class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg"
+									>
+										Import Data
+										<div class="text-xs text-text-muted mt-0.5">Restore from a previous export file</div>
+									</button>
+								</div>
+								<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								<button
+									onclick={() => {
+										handlePurgeAll();
+										showSettingsMenu = false;
+									}}
+									class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+								>
+									Purge All Data
+								</button>
+							</div>
+						{/if}
+					</div>
+
+					{#if !isAuthenticated}
+						<button
+							onclick={() => goto('/auth')}
+							class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
+							title="Sign in to sync across devices"
+						>
+							Sign In
+						</button>
+					{:else}
+						<div class="flex items-center gap-2">
+							<span class="text-xs text-text-muted px-2">Signed In</span>
+						</div>
+					{/if}
+					<ThemeToggle />
 				</div>
-			{/if}
-				<ThemeToggle />
+
+				<!-- Mobile: hamburger menu -->
+				<div class="md:hidden flex items-center gap-2">
+					<ThemeToggle />
+					<div class="relative mobile-menu-container">
+						<button
+							onclick={() => (showMobileMenu = !showMobileMenu)}
+							class="p-3 rounded-lg text-text-muted hover:text-text dark:hover:text-white hover:bg-primary/5 dark:hover:bg-primary/5 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+							title="Menu"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="3" y1="12" x2="21" y2="12"></line>
+								<line x1="3" y1="6" x2="21" y2="6"></line>
+								<line x1="3" y1="18" x2="21" y2="18"></line>
+							</svg>
+						</button>
+
+						{#if showMobileMenu}
+							<div
+								role="menu"
+								tabindex="-1"
+								class="absolute right-0 mt-2 w-64 bg-white dark:bg-surface-dark rounded-xl shadow-lg border border-black/5 dark:border-white/5 py-2 z-50"
+								onclick={(e) => e.stopPropagation()}
+							>
+								{#if isAuthenticated}
+									<div class="px-4 py-2 text-xs text-text-muted border-b border-black/5 dark:border-white/5">
+										Signed in
+									</div>
+									<button
+										onclick={() => {
+											handleSync();
+											showMobileMenu = false;
+										}}
+										disabled={syncing}
+										class="w-full text-left px-4 py-3 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors flex items-center gap-3 disabled:opacity-50"
+									>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="18"
+											height="18"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											class={syncing ? 'animate-spin' : ''}
+										>
+											<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+										</svg>
+										{syncing ? 'Syncing...' : 'Sync'}
+									</button>
+									<button
+										onclick={() => {
+											handleSignOut();
+											showMobileMenu = false;
+										}}
+										class="w-full text-left px-4 py-3 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+									>
+										Sign Out
+									</button>
+									<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								{:else}
+									<button
+										onclick={() => {
+											goto('/auth');
+											showMobileMenu = false;
+										}}
+										class="w-full text-left px-4 py-3 text-sm font-medium text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+									>
+										Sign In
+									</button>
+									<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								{/if}
+								
+								<button
+									onclick={() => {
+										goto('/about');
+										showMobileMenu = false;
+									}}
+									class="w-full text-left px-4 py-3 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+								>
+									About Listo
+								</button>
+								
+								<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								
+								<div class="px-4 py-2">
+									<div class="text-xs font-semibold text-text dark:text-white mb-2">Data Management</div>
+									<button
+										onclick={() => {
+											handleExport();
+											showMobileMenu = false;
+										}}
+										class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg mb-1"
+									>
+										Export Data
+									</button>
+									<button
+										onclick={() => {
+											handleImport();
+											showMobileMenu = false;
+										}}
+										class="w-full text-left px-4 py-2 text-sm text-text dark:text-white hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors rounded-lg"
+									>
+										Import Data
+									</button>
+								</div>
+								
+								<div class="border-t border-black/5 dark:border-white/5 my-2"></div>
+								
+								<button
+									onclick={() => {
+										handlePurgeAll();
+										showMobileMenu = false;
+									}}
+									class="w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+								>
+									Purge All Data
+								</button>
+							</div>
+						{/if}
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -1115,11 +1244,12 @@
 		<!-- Header -->
 		<header class="mb-8 text-center flex justify-center">
 			<a href="/" class="hover:opacity-80 transition-opacity">
-				<img
-					src="/Listo_Logo_IntentionalChill.svg"
-					alt="Listo - intentional chill"
-					class="w-full max-w-[200px] sm:max-w-[240px] md:max-w-[280px] h-auto text-text dark:text-white"
-				/>
+					<img
+						src="/Listo_Logo_IntentionalChill.svg"
+						alt="Listo - intentional chill"
+						class="w-full max-w-[160px] sm:max-w-[200px] md:max-w-[240px] h-auto text-text dark:text-white"
+					/>
+
 			</a>
 		</header>
 
@@ -1632,27 +1762,38 @@
 											{#if rec.metadata?.runtime}
 												<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 											{/if}
-											<div class="flex gap-3 mt-2 text-xs">
-												{#if rec.metadata?.imdb_rating}
-													<span class="text-text-muted">TMDB: {rec.metadata.imdb_rating.toFixed(1)}/10</span>
-												{/if}
-												{#if rec.metadata?.rt_score}
-													<span class="text-text-muted">🍅 {rec.metadata.rt_score}%</span>
-												{/if}
-											</div>
-											{#if (rec.category === 'movie' || rec.category === 'show') && rec.metadata?.tmdb_id}
-												<div class="flex gap-2 mt-2">
-													<a
-														href="https://www.themoviedb.org/{rec.category === 'movie' ? 'movie' : 'tv'}/{rec.metadata.tmdb_id}"
-														target="_blank"
-														rel="noopener noreferrer"
-														class="text-xs text-primary hover:underline"
-														onclick={(e) => e.stopPropagation()}
-													>
-														View on TMDB →
-													</a>
-												</div>
-											{/if}
+						<div class="flex gap-3 mt-2 text-xs">
+							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.imdb_rating}
+								<span class="text-text-muted">TMDB: {(rec.metadata as any).imdb_rating.toFixed(1)}/10</span>
+							{/if}
+							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_score}
+								<span class="text-text-muted">🍅 {(rec.metadata as any).rt_score}%</span>
+							{/if}
+						</div>
+						{#if rec.category === 'movie' || rec.category === 'show'}
+							<div class="flex gap-3 mt-2">
+								{#if (rec.metadata as any)?.tmdb_id}
+									<a
+										href="https://www.themoviedb.org/{rec.category === 'movie' ? 'movie' : 'tv'}/{(rec.metadata as any).tmdb_id}"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="text-xs text-primary hover:underline"
+										onclick={(e) => e.stopPropagation()}
+									>
+										View on TMDB →
+									</a>
+								{/if}
+								<a
+									href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(rec.title)}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-xs text-primary hover:underline"
+									onclick={(e) => e.stopPropagation()}
+								>
+									Search on Rotten Tomatoes →
+								</a>
+							</div>
+						{/if}
 											{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
 												<p class="text-sm text-text-muted mt-2 pt-2 border-t border-black/5 dark:border-white/5">
 													{rec.metadata.overview}
@@ -1858,27 +1999,38 @@
 										{#if rec.metadata?.runtime}
 											<p class="text-xs text-text-muted mt-2">Runtime: {rec.metadata.runtime} min</p>
 										{/if}
-										<div class="flex gap-3 mt-2 text-xs">
-											{#if rec.metadata?.imdb_rating}
-												<span class="text-text-muted">TMDB: {rec.metadata.imdb_rating.toFixed(1)}/10</span>
-											{/if}
-											{#if rec.metadata?.rt_score}
-												<span class="text-text-muted">🍅 {rec.metadata.rt_score}%</span>
-											{/if}
-										</div>
-										{#if (rec.category === 'movie' || rec.category === 'show') && rec.metadata?.tmdb_id}
-											<div class="flex gap-2 mt-2">
-												<a
-													href="https://www.themoviedb.org/{rec.category === 'movie' ? 'movie' : 'tv'}/{rec.metadata.tmdb_id}"
-													target="_blank"
-													rel="noopener noreferrer"
-													class="text-xs text-primary hover:underline"
-													onclick={(e) => e.stopPropagation()}
-												>
-													View on TMDB →
-												</a>
-											</div>
-										{/if}
+						<div class="flex gap-3 mt-2 text-xs">
+							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.imdb_rating}
+								<span class="text-text-muted">TMDB: {(rec.metadata as any).imdb_rating.toFixed(1)}/10</span>
+							{/if}
+							{#if (rec.category === 'movie' || rec.category === 'show') && (rec.metadata as any)?.rt_score}
+								<span class="text-text-muted">🍅 {(rec.metadata as any).rt_score}%</span>
+							{/if}
+						</div>
+						{#if rec.category === 'movie' || rec.category === 'show'}
+							<div class="flex gap-3 mt-2">
+								{#if (rec.metadata as any)?.tmdb_id}
+									<a
+										href="https://www.themoviedb.org/{rec.category === 'movie' ? 'movie' : 'tv'}/{(rec.metadata as any).tmdb_id}"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="text-xs text-primary hover:underline"
+										onclick={(e) => e.stopPropagation()}
+									>
+										View on TMDB →
+									</a>
+								{/if}
+								<a
+									href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(rec.title)}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-xs text-primary hover:underline"
+									onclick={(e) => e.stopPropagation()}
+								>
+									Search on Rotten Tomatoes →
+								</a>
+							</div>
+						{/if}
 										{#if rec.metadata?.overview && rec.metadata.overview !== rec.description}
 											<p class="text-sm text-text-muted mt-2 pt-2 border-t border-black/5 dark:border-white/5">
 												{rec.metadata.overview}
