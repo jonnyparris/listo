@@ -5,6 +5,21 @@ export class SyncService {
 	private syncInProgress = false;
 
 	/**
+	 * Get the last successful pull timestamp from localStorage
+	 */
+	private getLastPulledAt(userId: string): number {
+		const stored = localStorage.getItem(`lastPulledAt_${userId}`);
+		return stored ? parseInt(stored, 10) : 0;
+	}
+
+	/**
+	 * Update the last successful pull timestamp in localStorage
+	 */
+	private setLastPulledAt(userId: string, timestamp: number): void {
+		localStorage.setItem(`lastPulledAt_${userId}`, timestamp.toString());
+	}
+
+	/**
 	 * Sync local recommendations to the server
 	 * Uses last-write-wins strategy based on updated_at timestamp
 	 */
@@ -69,11 +84,15 @@ export class SyncService {
 	 */
 	async pullFromServer(userId: string, forceFull: boolean = false): Promise<{ success: boolean; error?: string }> {
 		try {
-			// Get the latest updated_at timestamp from ALL local recommendations (including deleted/completed)
-			const localRecs = await dbOperations.getAllRecommendationsForSync(userId);
-			// Force full sync if requested or if we have very few local items (likely a fresh login)
-			const shouldForceFull = forceFull || localRecs.length < 5;
-			const lastSync = shouldForceFull ? 0 : (localRecs.length > 0 ? Math.max(...localRecs.map((r) => r.updated_at)) : 0);
+			// Determine what timestamp to use for fetching updates
+			// CRITICAL FIX: Use the last successful pull timestamp, not the max local timestamp
+			// This ensures we don't miss recommendations created on other devices while we were offline
+			let lastSync = this.getLastPulledAt(userId);
+
+			// If forcing a full sync, reset to 0 to fetch everything
+			if (forceFull) {
+				lastSync = 0;
+			}
 
 			// Fetch updates from server
 			const response = await fetch(`/api/recommendations?since=${lastSync}`);
@@ -84,6 +103,9 @@ export class SyncService {
 			}
 
 			const serverRecs: LocalRecommendation[] = await response.json();
+
+			// Get local records for merge comparison
+			const localRecs = await dbOperations.getAllRecommendationsForSync(userId);
 
 			// Merge with local data using last-write-wins
 			let added = 0, updated = 0;
@@ -101,6 +123,10 @@ export class SyncService {
 				}
 				// If local is newer, keep local (it will be synced on next push)
 			}
+
+			// Update the last pulled timestamp to now
+			// This ensures the next pull will only fetch items updated after this sync completed
+			this.setLastPulledAt(userId, Math.floor(Date.now() / 1000));
 
 			return { success: true };
 		} catch (error) {
