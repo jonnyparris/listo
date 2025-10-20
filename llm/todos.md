@@ -1,10 +1,24 @@
-- [ ] Failed to sync, D1_ERROR: table recommendations has no column named source: SQLITE_ERROR
-- [ ] Titles that are too long for the item card in compact mode should be truncated instead of overflowing
-- [ ] make the search icon take up less space on mobile, until it's been selected for input
-- [ ] grid mode should be at least 2 wide even on mobile, with just images per card until they're tapped for expansion.
-- [ ] there should be a sensible placeholder image used for items without a image when in grid mode
-- [ ] I should only have to tap a suggestion once for the list to disappear.
-- [ ] save images for links enhanced by Spotify
-- [ ] when i click to share an item it should share the actual image if present not just a link to the image.
-- [ ] The mobile sticky header in the top left should not include the tagline, just Listo and the bookmark logo
-- [ ] add smart parsing of a title to set the category. I should be able to use a hashtag to set the category, that shouldn't save as part of the title itself. Similar to the quickadd feature of apple calendar, or how you can set attributes of a todo item in todoist. Think hard
+- [x] Failed to sync, D1_ERROR: table recommendations has no column named source: SQLITE_ERROR
+  - Fixed by running D1 migration on both local and remote databases
+- [x] Titles that are too long for the item card in compact mode should be truncated instead of overflowing
+  - Already working with `truncate` class
+- [x] make the search icon take up less space on mobile, until it's been selected for input
+  - Changed from full-width button to compact icon-only button (p-2.5, 20px icon)
+- [x] grid mode should be at least 2 wide even on mobile, with just images per card until they're tapped for expansion.
+  - Updated to: 2 cols mobile, 3 cols tablet, 4 cols desktop
+  - Grid collapsed view shows only images/placeholders until tapped
+- [x] there should be a sensible placeholder image used for items without a image when in grid mode
+  - Added gradient placeholders with category icon and truncated title
+- [x] I should only have to tap a suggestion once for the list to disappear.
+  - Increased blur timeout to 200ms to allow mousedown to fire
+- [x] save images for links enhanced by Spotify
+  - Added album_art to image URL checks in share function and card rendering
+- [x] when i click to share an item it should share the actual image if present not just a link to the image.
+  - Already implemented with blob conversion via proxy endpoint
+- [x] The mobile sticky header in the top left should not include the tagline, just Listo and the bookmark logo
+  - Created new Listo_Logo.svg without tagline for mobile header
+- [x] add smart parsing of a title to set the category. I should be able to use a hashtag to set the category, that shouldn't save as part of the title itself. Similar to the quickadd feature of apple calendar, or how you can set attributes of a todo item in todoist.
+  - Implemented parseSmartTitle() function with category aliases
+  - Supports patterns like "#movie Inception" or "Dune #book"
+  - Auto-detects category and removes hashtag from title
+  - Includes aliases (e.g., #film → movie, #show → series, #yt → youtube)
