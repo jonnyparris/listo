@@ -1672,49 +1672,47 @@
 		<!-- Search and Filter -->
 		<div class="mb-8 space-y-4">
 			<!-- Mobile: Show search icon button or search input -->
-			<div class="md:hidden">
+			<div class="md:hidden flex gap-2 items-center">
 				{#if showMobileSearch}
-					<div class="flex gap-2 items-center">
-						<div class="flex-1">
-							<SearchBar
-								bind:value={searchQuery}
-								bind:selectedCategory={selectedCategory}
-								onSearch={handleSearch}
-								onCategoryChange={handleCategoryChange}
-								placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
-								autofocus={true}
-								showCategoryFilter={false}
-								onBlur={() => {
-									// Close search if empty when losing focus
-									setTimeout(() => {
-										if (!searchQuery.trim()) {
-											showMobileSearch = false;
-										}
-									}, 150);
-								}}
-							/>
-						</div>
-						{#if searchQuery.trim()}
-							<button
-								onclick={() => {
-									searchQuery = '';
-									handleSearch('');
-									showMobileSearch = false;
-								}}
-								class="p-3 rounded-xl bg-surface-light dark:bg-surface-dark text-text-muted hover:text-text dark:hover:text-white transition-colors flex-shrink-0"
-								title="Clear search"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<line x1="18" y1="6" x2="6" y2="18"></line>
-									<line x1="6" y1="6" x2="18" y2="18"></line>
-								</svg>
-							</button>
-						{/if}
+					<div class="flex-1">
+						<SearchBar
+							bind:value={searchQuery}
+							bind:selectedCategory={selectedCategory}
+							onSearch={handleSearch}
+							onCategoryChange={handleCategoryChange}
+							placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
+							autofocus={true}
+							showCategoryFilter={false}
+							onBlur={() => {
+								// Close search if empty when losing focus
+								setTimeout(() => {
+									if (!searchQuery.trim()) {
+										showMobileSearch = false;
+									}
+								}, 150);
+							}}
+						/>
 					</div>
+					{#if searchQuery.trim()}
+						<button
+							onclick={() => {
+								searchQuery = '';
+								handleSearch('');
+								showMobileSearch = false;
+							}}
+							class="p-2.5 rounded-xl bg-surface-light dark:bg-surface-dark text-text-muted hover:text-text dark:hover:text-white transition-colors flex-shrink-0"
+							title="Clear search"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="18" y1="6" x2="6" y2="18"></line>
+								<line x1="6" y1="6" x2="18" y2="18"></line>
+							</svg>
+						</button>
+					{/if}
 				{:else}
 					<button
 						onclick={() => showMobileSearch = true}
-						class="flex items-center justify-center p-2.5 bg-surface-light dark:bg-surface-dark rounded-xl text-text-muted hover:text-text dark:hover:text-white transition-colors"
+						class="flex items-center justify-center p-2.5 bg-surface-light dark:bg-surface-dark rounded-xl text-text-muted hover:text-text dark:hover:text-white transition-colors ml-auto"
 						title="Search"
 						aria-label="Open search"
 					>
