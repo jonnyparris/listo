@@ -9,6 +9,8 @@
 		selectedCategory?: Category | 'all';
 		onCategoryChange?: (category: Category | 'all') => void;
 		showCategoryFilter?: boolean;
+		autofocus?: boolean;
+		onBlur?: () => void;
 	}
 
 	let {
@@ -17,7 +19,9 @@
 		onSearch,
 		selectedCategory = $bindable<Category | 'all'>('all'),
 		onCategoryChange,
-		showCategoryFilter = true
+		showCategoryFilter = true,
+		autofocus = false,
+		onBlur
 	}: Props = $props();
 
 	const categories: (Category | 'all')[] = [
@@ -43,6 +47,10 @@
 		const target = e.target as HTMLInputElement;
 		value = target.value;
 		onSearch?.(value);
+	}
+
+	function handleBlur(e: FocusEvent) {
+		onBlur?.();
 	}
 
 	function handleCategoryChange(e: Event) {
@@ -74,7 +82,9 @@
 		<Input
 			{value}
 			{placeholder}
+			{autofocus}
 			oninput={handleInput}
+			onblur={handleBlur}
 			class="w-full"
 		/>
 	</div>

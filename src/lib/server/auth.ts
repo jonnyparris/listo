@@ -5,11 +5,12 @@ import type { RequestEvent } from '@sveltejs/kit';
  * Returns user ID if authenticated, null otherwise
  */
 export async function getCurrentUser(event: RequestEvent): Promise<string | null> {
-	// Check both new WebAuthn cookie and legacy session cookie
+	// Check both new WebAuthn cookie and session cookies (handle both naming conventions)
 	const webAuthnUserId = event.cookies.get('user-id');
+	const sessionUserId = event.cookies.get('session-user-id');
 	const legacyUserId = event.cookies.get('session_user_id');
 
-	return webAuthnUserId || legacyUserId || null;
+	return webAuthnUserId || sessionUserId || legacyUserId || null;
 }
 
 /**

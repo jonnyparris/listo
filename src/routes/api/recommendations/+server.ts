@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
 		const { results } = await platform.env.DB
 			.prepare(
 				`SELECT * FROM recommendations
-				WHERE user_id = ? AND updated_at > ?
+				WHERE user_id = ? AND updated_at >= ?
 				ORDER BY updated_at DESC`
 			)
 			.bind(userId, since)

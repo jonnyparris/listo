@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 					await platform.env.DB
 						.prepare(
 							`UPDATE recommendations
-							SET title = ?, category = ?, description = ?, metadata = ?, tags = ?,
+							SET title = ?, category = ?, description = ?, source = ?, metadata = ?, tags = ?,
 							    updated_at = ?, deleted_at = ?, completed_at = ?, review = ?, rating = ?
 							WHERE id = ?`
 						)
@@ -39,6 +39,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 							rec.title,
 							rec.category,
 							rec.description || null,
+							rec.source || null,
 							rec.metadata ? JSON.stringify(rec.metadata) : null,
 							rec.tags || null,
 							rec.updated_at,
@@ -55,8 +56,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 				await platform.env.DB
 					.prepare(
 						`INSERT INTO recommendations
-						(id, user_id, title, category, description, metadata, tags, created_at, updated_at, deleted_at, completed_at, review, rating)
-						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+						(id, user_id, title, category, description, source, metadata, tags, created_at, updated_at, deleted_at, completed_at, review, rating)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 					)
 					.bind(
 						rec.id,
@@ -64,6 +65,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 						rec.title,
 						rec.category,
 						rec.description || null,
+						rec.source || null,
 						rec.metadata ? JSON.stringify(rec.metadata) : null,
 						rec.tags || null,
 						rec.created_at,
@@ -78,6 +80,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 
 			synced.push(rec.id);
 		} catch (error) {
+			console.error(`[SYNC] Error syncing recommendation ${rec.id}:`, error);
 			errors.push({
 				id: rec.id,
 				message: error instanceof Error ? error.message : 'Unknown error'

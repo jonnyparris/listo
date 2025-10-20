@@ -513,9 +513,92 @@
 	}
 
 	function handleCategoryChange(category: Category | 'all') {
-		selectedCategory = category;
+		// Toggle: if clicking the same category, clear the filter
+		if (selectedCategory === category) {
+			selectedCategory = 'all';
+		} else {
+			selectedCategory = category;
+		}
 		applyFilters();
 	}
+
+	/**
+	 * Smart parsing of title input to extract hashtags for category selection
+	 * Supports patterns like:
+	 * - "#movie Inception" -> category: movie, title: "Inception"
+	 * - "Dune #book" -> category: book, title: "Dune"
+	 * - "#series Breaking Bad" -> category: series, title: "Breaking Bad"
+	 */
+	function parseSmartTitle(input: string): { title: string; category: Category | null } {
+		// Category aliases map
+		const categoryAliases: Record<string, Category> = {
+			'movie': 'movie',
+			'movies': 'movie',
+			'film': 'movie',
+			'series': 'series',
+			'show': 'series',
+			'tv': 'series',
+			'youtube': 'youtube',
+			'yt': 'youtube',
+			'video': 'youtube',
+			'podcast': 'podcast',
+			'pod': 'podcast',
+			'artist': 'artist',
+			'musician': 'artist',
+			'song': 'song',
+			'track': 'song',
+			'music': 'song',
+			'genre': 'genre',
+			'restaurant': 'restaurant',
+			'resto': 'restaurant',
+			'food': 'restaurant',
+			'recipe': 'recipe',
+			'activity': 'activity',
+			'videogame': 'video-game',
+			'game': 'video-game',
+			'boardgame': 'board-game',
+			'book': 'book',
+			'graphicnovel': 'graphic-novel',
+			'comic': 'graphic-novel',
+			'quote': 'quote'
+		};
+
+		// Extract hashtags (supports #tag at start, middle, or end)
+		const hashtagPattern = /#(\w+)/g;
+		const hashtags = Array.from(input.matchAll(hashtagPattern), m => m[1].toLowerCase());
+
+		// Try to find a matching category from hashtags
+		let detectedCategory: Category | null = null;
+		for (const tag of hashtags) {
+			if (categoryAliases[tag]) {
+				detectedCategory = categoryAliases[tag];
+				break; // Use first matching hashtag
+			}
+		}
+
+		// Remove all hashtags from the title
+		const cleanTitle = input.replace(hashtagPattern, '').trim().replace(/\s+/g, ' ');
+
+		return {
+			title: cleanTitle,
+			category: detectedCategory
+		};
+	}
+
+	// Watch for title changes and auto-detect category
+	$effect(() => {
+		if (formTitle && formTitle.includes('#')) {
+			const { title, category } = parseSmartTitle(formTitle);
+			if (category && category !== formCategory) {
+				// Update category and clean title
+				formCategory = category;
+				// Delay title update to avoid input cursor jumping
+				setTimeout(() => {
+					formTitle = title;
+				}, 0);
+			}
+		}
+	});
 
 	async function saveRecommendation() {
 		// Handle bulk mode
@@ -842,7 +925,7 @@
 	async function shareRecommendation(rec: LocalRecommendation) {
 		const shareText = formatShareText(rec);
 
-		// Get image URL if available
+		// Get image URL if available (includes album_art from Spotify)
 		const imageUrl = rec.metadata?.poster_url ||
 		                 rec.metadata?.thumbnail_url ||
 		                 rec.metadata?.cover_url ||
@@ -1214,7 +1297,7 @@
 	{#if isScrolled}
 		<div class="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-surface-dark shadow-md border-b border-black/5 dark:border-white/5 px-4 py-3 flex items-center justify-between">
 			<img
-				src="/Listo_Logo_IntentionalChill.svg"
+				src="/Listo_Logo.svg"
 				alt="Listo"
 				class="h-8"
 			/>
@@ -1588,42 +1671,57 @@
 
 		<!-- Search and Filter -->
 		<div class="mb-8 space-y-4">
-			<!-- Mobile: Show search icon button -->
+			<!-- Mobile: Show search icon button or search input -->
 			<div class="md:hidden">
 				{#if showMobileSearch}
-					<div class="fixed inset-0 bg-black/50 z-40" onclick={() => showMobileSearch = false}></div>
-					<div class="fixed top-0 left-0 right-0 bg-background-light dark:bg-background-dark p-4 z-50 shadow-lg">
-						<div class="flex items-center gap-2">
+					<div class="flex gap-2 items-center">
+						<div class="flex-1">
 							<SearchBar
 								bind:value={searchQuery}
 								bind:selectedCategory={selectedCategory}
 								onSearch={handleSearch}
 								onCategoryChange={handleCategoryChange}
 								placeholder={showCompleted ? 'Search completed items...' : 'Search recommendations...'}
+								autofocus={true}
+								showCategoryFilter={false}
+								onBlur={() => {
+									// Close search if empty when losing focus
+									setTimeout(() => {
+										if (!searchQuery.trim()) {
+											showMobileSearch = false;
+										}
+									}, 150);
+								}}
 							/>
+						</div>
+						{#if searchQuery.trim()}
 							<button
-								onclick={() => showMobileSearch = false}
-								class="p-2 rounded-lg hover:bg-surface-light dark:hover:bg-surface-dark"
-								title="Close search"
+								onclick={() => {
+									searchQuery = '';
+									handleSearch('');
+									showMobileSearch = false;
+								}}
+								class="p-3 rounded-xl bg-surface-light dark:bg-surface-dark text-text-muted hover:text-text dark:hover:text-white transition-colors flex-shrink-0"
+								title="Clear search"
 							>
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<line x1="18" y1="6" x2="6" y2="18"></line>
 									<line x1="6" y1="6" x2="18" y2="18"></line>
 								</svg>
 							</button>
-						</div>
+						{/if}
 					</div>
 				{:else}
 					<button
 						onclick={() => showMobileSearch = true}
-						class="w-full flex items-center gap-2 px-4 py-3 bg-surface-light dark:bg-surface-dark rounded-xl text-text-muted hover:text-text dark:hover:text-white transition-colors"
+						class="flex items-center justify-center p-2.5 bg-surface-light dark:bg-surface-dark rounded-xl text-text-muted hover:text-text dark:hover:text-white transition-colors"
 						title="Search"
+						aria-label="Open search"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="11" cy="11" r="8"></circle>
 							<path d="m21 21-4.35-4.35"></path>
 						</svg>
-						<span class="text-sm">{showCompleted ? 'Search completed items...' : 'Search recommendations...'}</span>
 					</button>
 				{/if}
 			</div>
@@ -1779,7 +1877,7 @@
 					</div>
 
 					<!-- Form Content -->
-					<div class="flex-1 px-4 py-6 sm:px-6">
+					<div class="flex-1 px-4 py-6 sm:px-6 pb-32">
 						<div class="max-w-2xl mx-auto">
 							<form
 								onsubmit={(e) => {
@@ -1982,6 +2080,11 @@
 											placeholder="Add some notes..."
 											class="w-full rounded-xl border border-black/5 dark:border-white/5 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none text-base"
 											rows="6"
+											onfocus={(e) => {
+												setTimeout(() => {
+													(e.target as HTMLTextAreaElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+												}, 300);
+											}}
 											onkeydown={(e) => {
 												if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 													e.preventDefault();
@@ -2062,7 +2165,7 @@
 
 		<!-- Active Recommendations -->
 		{#if !showCompleted}
-			<div class="{layoutMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}">
+			<div class="{layoutMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' : 'space-y-4'}">
 				{#if filteredRecommendations.length === 0}
 					<div class="py-16 text-center">
 						<div class="mb-4">
@@ -2137,6 +2240,11 @@
 											placeholder="What did you think?"
 											class="w-full rounded-xl border border-black/5 dark:border-white/5 bg-background-light dark:bg-gray-800 px-4 py-3 text-text dark:text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
 											rows="3"
+											onfocus={(e) => {
+												setTimeout(() => {
+													(e.target as HTMLTextAreaElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+												}, 300);
+											}}
 											onkeydown={(e) => {
 												if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 													e.preventDefault();
@@ -2167,7 +2275,30 @@
 										}
 									}}
 								>
-									{#if layoutMode === 'compact' && expandedCardId !== rec.id}
+									{#if layoutMode === 'grid' && expandedCardId !== rec.id}
+										<!-- Grid collapsed view: only image/placeholder -->
+										{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url || rec.metadata?.album_art}
+											<img
+												src={rec.metadata.poster_url || rec.metadata.thumbnail_url || rec.metadata.album_art}
+												alt={rec.title}
+												class="w-full h-48 rounded object-cover flex-shrink-0"
+												loading="lazy"
+												decoding="async"
+											/>
+										{:else}
+											<!-- Placeholder for grid mode without image -->
+											<div class="w-full h-48 rounded bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+												<div class="text-center p-4">
+													<span class="text-4xl mb-2 block opacity-60">
+														{getCategoryIcon(rec.category)}
+													</span>
+													<h3 class="text-sm font-semibold text-text dark:text-white line-clamp-2">
+														{rec.title}
+													</h3>
+												</div>
+											</div>
+										{/if}
+									{:else if layoutMode === 'compact' && expandedCardId !== rec.id}
 										<!-- Compact collapsed view: only icon and title -->
 										<div class="flex items-center gap-2 flex-1">
 											<span class="rounded-full bg-primary/20 px-2 py-1 text-sm flex-shrink-0" title={formatCategory(rec.category)}>
@@ -2178,10 +2309,10 @@
 											</h3>
 										</div>
 									{:else}
-										<!-- Full card view (grid, normal, or compact+expanded) -->
-										{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url}
+										<!-- Full card view (grid expanded, normal, or compact+expanded) -->
+										{#if rec.metadata?.poster_url || rec.metadata?.thumbnail_url || rec.metadata?.album_art}
 											<img
-												src={rec.metadata.poster_url || rec.metadata.thumbnail_url}
+												src={rec.metadata.poster_url || rec.metadata.thumbnail_url || rec.metadata.album_art}
 												alt={rec.title}
 												class="{layoutMode === 'grid' ? 'w-full h-48' : layoutMode === 'compact' ? 'h-16 w-12' : 'h-32 w-24'} rounded object-cover flex-shrink-0"
 												loading="lazy"
@@ -2379,7 +2510,7 @@
 			</div>
 		{:else}
 			<!-- Completed Recommendations -->
-			<div class="{layoutMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}">
+			<div class="{layoutMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' : 'space-y-4'}">
 				{#if filteredCompletedRecs.length === 0}
 					<div class="py-16 text-center">
 						<div class="mb-4">

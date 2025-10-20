@@ -28,11 +28,15 @@ CREATE TABLE IF NOT EXISTS recommendations (
 	category TEXT NOT NULL, -- e.g., 'movie', 'book', 'restaurant', etc.
 	title TEXT NOT NULL,
 	description TEXT,
+	source TEXT, -- Where the recommendation came from (e.g., "friend", "podcast", "article")
 	metadata JSON, -- Store enriched data as JSON (e.g., poster, ratings, links)
 	tags TEXT, -- Comma-separated tags for search
 	created_at INTEGER NOT NULL DEFAULT (unixepoch()),
 	updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
 	deleted_at INTEGER, -- Soft delete timestamp
+	completed_at INTEGER, -- Completion timestamp
+	review TEXT, -- User's review text
+	rating INTEGER, -- User's rating (1-5)
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

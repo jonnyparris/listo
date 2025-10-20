@@ -24,8 +24,6 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		// Verify the registration response
 		const verification = await verifyRegistration(body, challenge, origin);
 
-		console.log('Full verification object:', JSON.stringify(verification, null, 2));
-
 		if (!verification.verified || !verification.registrationInfo) {
 			console.error('Verification failed or no registration info:', {
 				verified: verification.verified,
@@ -39,17 +37,6 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const credentialID = credential.id;
 		const credentialPublicKey = credential.publicKey;
 		const counter = credential.counter;
-
-		// Log raw registration info for debugging
-		console.log('Raw registration info:', {
-			credentialID: credentialID,
-		credentialIDType: typeof credentialID,
-		credentialIDLength: credentialID?.length,
-			credentialPublicKeyType: typeof credentialPublicKey,
-			credentialPublicKeyLength: credentialPublicKey?.length || credentialPublicKey?.byteLength,
-			counter: counter,
-			counterType: typeof counter
-		});
 
 		// Ensure username is null if undefined or empty string (D1 doesn't accept undefined)
 		const username = userData.username && userData.username.trim() ? userData.username.trim() : null;
@@ -76,25 +63,15 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			// This passkey was already registered on another device
 			// Use the existing user_id to maintain sync across devices
 			finalUserId = existingCredential.user_id as string;
-			console.log('Credential already exists, using existing user_id:', finalUserId);
 		} else {
 			// New credential - create user and credential as normal
 			finalUserId = userData.id;
-
-			console.log('Creating user with:', { id: finalUserId, username, type: typeof username });
 
 			await platform.env.DB.prepare(
 				'INSERT INTO users (id, username, created_at, updated_at) VALUES (?, ?, unixepoch(), unixepoch())'
 			)
 				.bind(finalUserId, username)
 				.run();
-
-			console.log('Creating credential with:', {
-				credentialID: encodedCredentialID,
-				userId: finalUserId,
-				counter,
-				counterType: typeof counter
-			});
 
 			await platform.env.DB.prepare(
 				`INSERT INTO credentials (id, user_id, public_key, counter, created_at)

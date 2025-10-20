@@ -105,9 +105,10 @@
 	}
 
 	function handleBlur() {
+		// Use a shorter timeout to allow mousedown to fire first
 		setTimeout(() => {
 			showSuggestions = false;
-		}, 150);
+		}, 200);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {

@@ -311,16 +311,15 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 
 				const show: any = await response.json();
 
-				return {
-					success: true,
-					metadata: {
-						type: 'podcast',
-						publisher: show.publisher,
-						description: show.description,
-						thumbnail_url: show.images[1]?.url || show.images[0]?.url,
-						spotify_url: show.external_urls.spotify
-					}
-				};
+			return {
+				success: true,
+				metadata: {
+					publisher: show.publisher,
+					description: show.description,
+					thumbnail_url: show.images[1]?.url || show.images[0]?.url,
+					spotify_url: show.external_urls.spotify
+				} as any
+			};
 			}
 
 			return {

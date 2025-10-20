@@ -46,6 +46,14 @@ export const dbOperations = {
 			.sortBy('updated_at');
 	},
 
+	// Get all recommendations including deleted and completed (for sync)
+	async getAllRecommendationsForSync(userId: string) {
+		return db.recommendations
+			.where('user_id')
+			.equals(userId)
+			.toArray();
+	},
+
 	// Get completed recommendations
 	async getCompletedRecommendations(userId: string) {
 		return db.recommendations

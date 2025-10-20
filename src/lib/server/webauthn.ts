@@ -138,13 +138,6 @@ export async function verifyAuthentication(
 	// Ensure counter is a valid number (never undefined)
 	const counter = Number(credential.counter) || 0;
 
-	console.log('Verifying authentication with credential:', {
-		id: credential.id,
-		publicKeyLength: credential.publicKey?.length,
-		counter: counter,
-		counterType: typeof counter
-	});
-
 	// Convert publicKey to Uint8Array if it's not already
 	const publicKeyUint8 = credential.publicKey instanceof Uint8Array
 		? credential.publicKey
@@ -157,13 +150,6 @@ export async function verifyAuthentication(
 		counter: counter,
 		transports: credential.transports
 	} as any;
-
-	console.log('WebAuthnCredential object being passed:', {
-		id: webAuthnCredential.id,
-		publicKeyLength: webAuthnCredential.publicKey.length,
-		counter: webAuthnCredential.counter,
-		transports: webAuthnCredential.transports
-	});
 
 	return await verifyAuthenticationResponse({
 		response,

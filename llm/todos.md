@@ -1,12 +1,10 @@
-# High Priority
-- [x] Cross-device recommendation syncing - CONFIRMED WORKING: Data syncs properly to D1 database via /api/recommendations/sync endpoint. UI already shows sync status, errors, and has manual sync button with auto-sync every interval for authenticated users.
-
-# Completed Tasks
-- [x] the compact list view shows only titles and category icons - clicking expands to a full card
-- [x] Podcast searches now use Spotify API for suggestions and enrichment
-
-# Outstanding Tasks
-- [ ] On mobile, the search should just be an icon until you tap it to actually search
-- [ ] Immediately flag if something is already saved. Even flag it in the suggestions dropdown.
-- [ ] move the active vs completed selectors to be part of the category filters
-- [ ] when i click to share an item it should share the actual image if present, not just a link to the image. Think hard about a way to make it work
+- [ ] Failed to sync, D1_ERROR: table recommendations has no column named source: SQLITE_ERROR
+- [ ] Titles that are too long for the item card in compact mode should be truncated instead of overflowing
+- [ ] make the search icon take up less space on mobile, until it's been selected for input
+- [ ] grid mode should be at least 2 wide even on mobile, with just images per card until they're tapped for expansion.
+- [ ] there should be a sensible placeholder image used for items without a image when in grid mode
+- [ ] I should only have to tap a suggestion once for the list to disappear.
+- [ ] save images for links enhanced by Spotify
+- [ ] when i click to share an item it should share the actual image if present not just a link to the image.
+- [ ] The mobile sticky header in the top left should not include the tagline, just Listo and the bookmark logo
+- [ ] add smart parsing of a title to set the category. I should be able to use a hashtag to set the category, that shouldn't save as part of the title itself. Similar to the quickadd feature of apple calendar, or how you can set attributes of a todo item in todoist. Think hard

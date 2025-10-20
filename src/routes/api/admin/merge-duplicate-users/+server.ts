@@ -43,8 +43,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 				const credentialId = dup.credential_id as string;
 				const userIds = (dup.user_ids as string).split(',');
 
-				console.log(`Processing duplicate credential ${credentialId} with users:`, userIds);
-
 				// Find the primary user (oldest created_at)
 				const primaryUserResult = await platform.env.DB.prepare(`
 					SELECT id, created_at
@@ -61,8 +59,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 				const primaryUserId = primaryUserResult.id as string;
 				const duplicateUserIds = userIds.filter(id => id !== primaryUserId);
 
-				console.log(`Primary user: ${primaryUserId}, Duplicates: ${duplicateUserIds.join(', ')}`);
-
 				// Migrate recommendations from each duplicate to primary
 				for (const dupUserId of duplicateUserIds) {
 					await platform.env.DB.prepare(`
@@ -70,8 +66,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 						SET user_id = ?
 						WHERE user_id = ?
 					`).bind(primaryUserId, dupUserId).run();
-
-					console.log(`Migrated recommendations from ${dupUserId} to ${primaryUserId}`);
 				}
 
 				// Delete duplicate credentials (keep only one for primary user)
@@ -80,8 +74,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 						DELETE FROM credentials
 						WHERE id = ? AND user_id = ?
 					`).bind(credentialId, dupUserId).run();
-
-					console.log(`Deleted duplicate credential for user ${dupUserId}`);
 				}
 
 				// Delete duplicate user records
@@ -89,8 +81,7 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 					await platform.env.DB.prepare(`
 						DELETE FROM users WHERE id = ?
 					`).bind(dupUserId).run();
-
-					console.log(`Deleted duplicate user ${dupUserId}`);
+					
 					mergedUsers.push(dupUserId);
 				}
 

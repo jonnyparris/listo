@@ -10,3 +10,4 @@ Create a web app for capturing and retrieving personal recommendations across va
 - svelte and sveltekit tooling guidelines @llm/svelte-mcp.md
 - gemini cli usage guidelines @llm/gemini.md
 - outstanding todos and feedback @llm/todos.md
+- Validate all changes using chrome-devtools before committing and deploying if you succeeded
