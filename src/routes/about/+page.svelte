@@ -93,7 +93,7 @@
 
 			<section class="pt-6 border-t border-gray-200 dark:border-gray-700">
 				<p class="text-sm text-text-muted text-center">
-					Made with care for people who value human connection over algorithmic consumption.
+					Made by <a href="https://ruskinconstant.com" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Jonnyparris</a>
 				</p>
 				<p class="mt-4 text-sm text-text-muted text-center">
 					<a href="/" class="text-primary hover:underline">← Back to Listo</a>
