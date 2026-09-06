@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { Category } from '$lib/types';
+import { checkRateLimit, clientKey } from '$lib/server/ratelimit';
 
 const VALID_CATEGORIES: Category[] = [
 	'series',
@@ -20,9 +21,16 @@ const VALID_CATEGORIES: Category[] = [
 	'quote'
 ];
 
-export const POST: RequestHandler = async ({ request, platform }) => {
-	if (!platform?.env?.AI) {
+export const POST: RequestHandler = async (event) => {
+	const { request, platform } = event;
+	if (!platform?.env?.AI || !platform.env.DB) {
 		return json({ error: 'AI not available' }, { status: 500 });
+	}
+
+	// Cost control: this endpoint spends Workers AI tokens per call
+	const limit = await checkRateLimit(platform.env.DB, clientKey(event, 'ai-suggest'), 20, 60);
+	if (!limit.allowed) {
+		return json({ error: 'Too many requests' }, { status: 429 });
 	}
 
 	try {
@@ -31,6 +39,9 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		if (!text || typeof text !== 'string' || text.trim().length === 0) {
 			return json({ error: 'Text is required' }, { status: 400 });
 		}
+
+		// Cap input size: bounds the prompt (and prompt-injection surface)
+		const trimmedText = text.trim().slice(0, 1000);
 
 		// Use Cloudflare Workers AI to classify the text
 		const prompt = `You are a helpful assistant that categorizes recommendations. Given a text input, determine which category it belongs to.
@@ -52,7 +63,7 @@ Valid categories:
 - graphic-novel: For graphic novels, comics, manga
 - quote: For quotes, sayings, phrases
 
-Input text: "${text.trim()}"
+Input text: "${trimmedText}"
 
 Respond with ONLY the category name from the list above, nothing else.`;
 
@@ -79,9 +90,6 @@ Respond with ONLY the category name from the list above, nothing else.`;
 		return json({ category: 'activity' });
 	} catch (error) {
 		console.error('AI suggestion error:', error);
-		return json(
-			{ error: error instanceof Error ? error.message : 'Failed to suggest category' },
-			{ status: 500 }
-		);
+		return json({ error: 'Failed to suggest category' }, { status: 500 });
 	}
 };

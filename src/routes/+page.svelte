@@ -27,6 +27,7 @@
 	let editingId = $state<string | null>(null);
 	let completingId = $state<string | null>(null);
 	let userId = $state('');
+	let syncInterval: ReturnType<typeof setInterval> | undefined;
 	let isAuthenticated = $state(false);
 
 	// Search state
@@ -52,6 +53,7 @@
 	let formDescription = $state('');
 	let formSource = $state('');
 	let formMetadata = $state<any>(undefined);
+	let previewCardEl = $state<HTMLElement | undefined>(undefined);
 	let bulkMode = $state(false);
 	let bulkTitles = $state('');
 
@@ -77,6 +79,7 @@
 
 	// Sync state
 	let syncing = $state(false);
+	let saving = $state(false); // double-submit guard for the add/edit form
 	let lastSyncError = $state<string | null>(null);
 
 	// AI state
@@ -191,8 +194,9 @@
 
 			// For authenticated users, sync with server to get latest data
 			if (user.authenticated) {
-				// Do an initial sync in the background to pull server data
-				syncService.pullFromServer(userId).then(async (result) => {
+				// Full pull on login: the only guaranteed recovery path if a
+				// watermark was ever computed with skewed clocks
+				syncService.pullFromServer(userId, true).then(async (result) => {
 					if (result.success) {
 						// Reload recommendations to show server data
 						await loadRecommendations();
@@ -210,9 +214,14 @@
 		}
 
 		setup().then(() => {
-			// Periodic background sync for authenticated users (every 30 seconds)
+			// Periodic background sync for authenticated users (every 30 seconds).
+			// The interval id is captured in the onMount scope — a cleanup returned
+			// inside the async .then() would never be consumed by Svelte, leaking
+			// the timer for the lifetime of the tab.
 			if (isAuthenticated) {
-				const syncInterval = setInterval(async () => {
+				syncInterval = setInterval(async () => {
+					// Skip background work in hidden tabs
+					if (document.visibilityState !== 'visible') return;
 					if (isAuthenticated && !syncing) {
 						const result = await syncService.fullSync(userId);
 						if (result.success) {
@@ -220,11 +229,6 @@
 						}
 					}
 				}, 30000); // 30 seconds
-
-				// Cleanup on unmount
-				return () => {
-					if (syncInterval) clearInterval(syncInterval);
-				};
 			}
 		});
 
@@ -358,6 +362,7 @@
 			window.removeEventListener('click', handleClickOutside);
 			window.removeEventListener('scroll', handleScroll);
 			window.removeEventListener('popstate', handlePopState);
+			if (syncInterval) clearInterval(syncInterval);
 		};
 	});
 
@@ -601,6 +606,10 @@
 	});
 
 	async function saveRecommendation() {
+		// Guard against double-submit (Enter while the previous save is in flight)
+		if (saving) return;
+		saving = true;
+		try {
 		// Handle bulk mode
 		if (bulkMode) {
 			const titles = bulkTitles.split('\n').filter(t => t.trim());
@@ -675,6 +684,9 @@
 		await loadRecommendations();
 		resetForm();
 		autoSync(); // Sync in background
+		} finally {
+			saving = false;
+		}
 	}
 
 	function startEdit(rec: LocalRecommendation) {
@@ -684,6 +696,8 @@
 		formDescription = rec.description || '';
 		formSource = rec.source || '';
 		formMetadata = rec.metadata;
+		matchedTitle = rec.title;
+		descAutoFilled = '';
 		openAddForm();
 	}
 
@@ -758,6 +772,9 @@
 		formSource = '';
 		formCategory = 'series';
 		formMetadata = undefined;
+		matchedTitle = '';
+		descAutoFilled = '';
+		enrichSeq++; // any in-flight condense must not write into a fresh form
 		bulkMode = false;
 		bulkTitles = '';
 		showAddForm = false;
@@ -769,6 +786,21 @@
 			.split('-')
 			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 			.join(' ');
+	}
+
+	/**
+	 * Only http(s) URLs from metadata may reach href attributes. Imported JSON
+	 * and third-party enrichment data are attacker-influenced inputs; without
+	 * this check a crafted `javascript:` URL in metadata becomes an XSS vector.
+	 */
+	function safeUrl(url: string | null | undefined): string | undefined {
+		if (!url) return undefined;
+		try {
+			const parsed = new URL(url);
+			return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : undefined;
+		} catch {
+			return undefined;
+		}
 	}
 
 	function getCategoryIcon(cat: Category): string {
@@ -821,12 +853,41 @@
 		});
 	}
 
+	let matchedTitle = $state('');
+	let descAutoFilled = $state('');
+	let enrichSeq = 0;
+
+	// Detach the matched/enriched metadata from the form. The auto-filled notes
+	// are only reverted if the user hasn't edited them since enrichment.
+	function clearEnrichmentMatch(revertAutoFilledDescription = true) {
+		enrichSeq++; // invalidate any in-flight description condense
+		formMetadata = undefined;
+		matchedTitle = '';
+		if (revertAutoFilledDescription && descAutoFilled && formDescription.trim() === descAutoFilled.trim()) {
+			formDescription = '';
+		}
+		descAutoFilled = '';
+	}
+
 	async function handleEnrichmentSelect(suggestion: any) {
 		formTitle = suggestion.title;
 		formMetadata = suggestion.metadata;
+		matchedTitle = suggestion.title;
+		const seq = ++enrichSeq;
 
-		// Auto-fill description if available - don't override existing description
-		if (!formDescription) {
+		// The preview card (poster + details) is the visual confirmation of the
+		// pick — on mobile it can sit below the fold, so nudge it into view.
+		// 'nearest' is a no-op when the card is already visible.
+		setTimeout(() => {
+			previewCardEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		}, 120);
+
+		// Auto-fill description if available — never override user-typed notes,
+		// but DO replace notes that were themselves auto-filled by a previous pick
+		const canAutoFill =
+			!formDescription.trim() ||
+			(descAutoFilled && formDescription.trim() === descAutoFilled.trim());
+		if (canAutoFill) {
 			let rawDescription = '';
 			if (suggestion.metadata?.overview) {
 				rawDescription = suggestion.metadata.overview;
@@ -867,8 +928,11 @@
 					
 					if (response.ok) {
 						const { condensed } = await response.json();
-						if (condensed && condensed.trim()) {
+						// A stale response (user unmatched or picked again meanwhile)
+						// must not write into the form
+						if (seq === enrichSeq && condensed && condensed.trim()) {
 							formDescription = condensed;
+							descAutoFilled = condensed;
 						}
 					}
 				} catch (error) {
@@ -876,8 +940,18 @@
 				}
 			} else if (rawDescription) {
 				formDescription = rawDescription;
+				descAutoFilled = rawDescription;
+			} else if (descAutoFilled && formDescription.trim() === descAutoFilled.trim()) {
+				// New pick has no overview — drop the previous pick's leftover notes
+				formDescription = '';
+				descAutoFilled = '';
 			}
 		}
+
+		// The user unmatched (or picked another suggestion) while the description
+		// was condensing — abandon the rest of this stale selection, otherwise
+		// the ensure-image block below would resurrect the match
+		if (seq !== enrichSeq) return;
 
 		// Ensure we have an image for the recommendation
 		if (suggestion.thumbnail) {
@@ -889,6 +963,15 @@
 			}
 		}
 	}
+
+	// Retyping a different title after a match invalidates it — otherwise the
+	// old match's poster/overview would be saved against the new title
+	$effect(() => {
+		const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+		if (formMetadata && matchedTitle && normalize(formTitle) !== normalize(matchedTitle)) {
+			clearEnrichmentMatch(true);
+		}
+	});
 
 	async function handleSync() {
 		if (syncing) return;
@@ -2024,6 +2107,78 @@
 										{/if}
 									</div>
 
+									{#if formMetadata && (formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art || formMetadata.year || formMetadata.genres || formMetadata.rating || formMetadata.artist)}
+										<div
+											bind:this={previewCardEl}
+											class="preview-card-in p-4 rounded-xl bg-surface-light dark:bg-surface-dark border border-emerald-500/30 dark:border-emerald-500/20"
+										>
+											<div class="flex items-center justify-between text-sm font-medium text-text dark:text-white mb-3">
+												<span class="flex items-center gap-2">
+													<span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+														<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+															<path d="M20 6L9 17l-5-5" />
+														</svg>
+													</span>
+													Matched
+												</span>
+												<button
+													type="button"
+													onclick={() => clearEnrichmentMatch(true)}
+													class="flex h-6 w-6 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-text dark:hover:text-white"
+													title="Remove match"
+													aria-label="Remove match"
+												>
+													<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+														<path d="M18 6L6 18M6 6l12 12" />
+													</svg>
+												</button>
+											</div>
+										<div class="flex gap-4">
+											{#if formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art}
+												<img
+													src={formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art}
+													alt={formTitle ? `${formTitle} poster` : 'Preview'}
+													class="h-32 w-24 rounded-lg object-cover flex-shrink-0 shadow-sm"
+												/>
+											{/if}
+											<div class="flex-1 text-sm space-y-2">
+												{#if formMetadata.artist}
+													<div class="text-text dark:text-white">
+														<span class="text-text-muted">Artist:</span> {formMetadata.artist}
+													</div>
+												{/if}
+												{#if formMetadata.year}
+													<div class="text-text dark:text-white">
+														<span class="text-text-muted">Year:</span> {formMetadata.year}
+													</div>
+												{/if}
+												{#if formMetadata.rating}
+													<div class="text-text dark:text-white">
+														<span class="text-text-muted">Rating:</span> {formMetadata.rating}/100
+													</div>
+												{/if}
+												{#if formMetadata.genres && formMetadata.genres.length > 0}
+													<div class="text-text dark:text-white">
+														<span class="text-text-muted">Genres:</span>
+														<div class="flex gap-1 flex-wrap mt-1">
+															{#each formMetadata.genres.slice(0, 5) as genre}
+																<span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+																	{genre}
+																</span>
+															{/each}
+														</div>
+													</div>
+												{/if}
+												{#if formMetadata.runtime}
+													<div class="text-text dark:text-white">
+														<span class="text-text-muted">Runtime:</span> {formMetadata.runtime} min
+													</div>
+												{/if}
+											</div>
+										</div>
+										</div>
+									{/if}
+
 									<div>
 										<label
 											for="source"
@@ -2091,55 +2246,6 @@
 											}}
 										></textarea>
 									</div>
-
-									{#if formMetadata && (formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art || formMetadata.year || formMetadata.genres || formMetadata.rating || formMetadata.artist)}
-										<div class="p-4 rounded-xl bg-surface-light dark:bg-surface-dark border border-black/5 dark:border-white/5">
-											<div class="text-sm font-medium text-text dark:text-white mb-3">Preview</div>
-											<div class="flex gap-4">
-												{#if formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art}
-													<img
-														src={formMetadata.poster_url || formMetadata.thumbnail_url || formMetadata.cover_url || formMetadata.album_art}
-														alt="Preview"
-														class="h-32 w-24 rounded object-cover flex-shrink-0"
-													/>
-												{/if}
-												<div class="flex-1 text-sm space-y-2">
-													{#if formMetadata.artist}
-														<div class="text-text dark:text-white">
-															<span class="text-text-muted">Artist:</span> {formMetadata.artist}
-														</div>
-													{/if}
-													{#if formMetadata.year}
-														<div class="text-text dark:text-white">
-															<span class="text-text-muted">Year:</span> {formMetadata.year}
-														</div>
-													{/if}
-													{#if formMetadata.rating}
-														<div class="text-text dark:text-white">
-															<span class="text-text-muted">Rating:</span> {formMetadata.rating}/100
-														</div>
-													{/if}
-													{#if formMetadata.genres && formMetadata.genres.length > 0}
-														<div class="text-text dark:text-white">
-															<span class="text-text-muted">Genres:</span>
-															<div class="flex gap-1 flex-wrap mt-1">
-																{#each formMetadata.genres.slice(0, 5) as genre}
-																	<span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-																		{genre}
-																	</span>
-																{/each}
-															</div>
-														</div>
-													{/if}
-													{#if formMetadata.runtime}
-														<div class="text-text dark:text-white">
-															<span class="text-text-muted">Runtime:</span> {formMetadata.runtime} min
-														</div>
-													{/if}
-												</div>
-											</div>
-										</div>
-									{/if}
 								</div>
 							</form>
 						</div>
@@ -2350,9 +2456,9 @@
 										{/if}
 									{#if (rec.metadata?.spotify_url || rec.metadata?.youtube_url || rec.category === 'restaurant') && layoutMode !== 'compact'}
 										<div class="mb-2 flex gap-2 items-center flex-wrap">
-											{#if rec.metadata?.spotify_url}
+											{#if safeUrl(rec.metadata?.spotify_url)}
 													<a
-														href={rec.metadata.spotify_url}
+														href={safeUrl(rec.metadata?.spotify_url)}
 														target="_blank"
 														rel="noopener noreferrer"
 														class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline"
@@ -2364,9 +2470,9 @@
 														Listen
 													</a>
 												{/if}
-												{#if rec.metadata?.youtube_url}
+												{#if safeUrl(rec.metadata?.youtube_url)}
 													<a
-														href={rec.metadata.youtube_url}
+														href={safeUrl(rec.metadata?.youtube_url)}
 														target="_blank"
 														rel="noopener noreferrer"
 														class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline"
@@ -2593,9 +2699,9 @@
 									{/if}
 									{#if rec.metadata?.spotify_url || rec.metadata?.youtube_url || rec.category === 'restaurant'}
 										<div class="mb-2 flex gap-2 items-center flex-wrap">
-											{#if rec.metadata?.spotify_url}
+											{#if safeUrl(rec.metadata?.spotify_url)}
 												<a
-													href={rec.metadata.spotify_url}
+													href={safeUrl(rec.metadata?.spotify_url)}
 													target="_blank"
 													rel="noopener noreferrer"
 													class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline"
@@ -2607,9 +2713,9 @@
 													Listen
 												</a>
 											{/if}
-											{#if rec.metadata?.youtube_url}
+											{#if safeUrl(rec.metadata?.youtube_url)}
 												<a
-													href={rec.metadata.youtube_url}
+													href={safeUrl(rec.metadata?.youtube_url)}
 													target="_blank"
 													rel="noopener noreferrer"
 													class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline"
@@ -2805,3 +2911,28 @@
 		</div>
 	</footer>
 </div>
+
+<style>
+	/* Selection feedback: the matched preview slides in under the title so the
+	   poster is visible immediately after picking a suggestion (mobile especially) */
+	@keyframes preview-card-in {
+		from {
+			opacity: 0;
+			transform: translateY(-6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.preview-card-in {
+		animation: preview-card-in 0.25s ease-out;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.preview-card-in {
+			animation: none;
+		}
+	}
+</style>

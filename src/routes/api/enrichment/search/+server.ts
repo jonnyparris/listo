@@ -1,9 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createEnrichmentService } from '$lib/services/enrichment';
-import { TMDB_API_KEY, YOUTUBE_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, OMDB_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+import { checkRateLimit, clientKey } from '$lib/server/ratelimit';
+import type { Category } from '$lib/types';
 
-export const GET: RequestHandler = async ({ url, platform }) => {
+const VALID_CATEGORIES: Category[] = [
+	'series', 'movie', 'youtube', 'podcast', 'artist', 'song', 'genre',
+	'restaurant', 'recipe', 'activity', 'video-game', 'board-game',
+	'book', 'graphic-novel', 'quote'
+];
+
+export const GET: RequestHandler = async (event) => {
+	const { url, platform } = event;
 	const query = url.searchParams.get('query');
 	const category = url.searchParams.get('category');
 
@@ -11,12 +20,23 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 		return json({ error: 'Missing query or category' }, { status: 400 });
 	}
 
+	if (!VALID_CATEGORIES.includes(category as Category)) {
+		return json({ error: 'Invalid category' }, { status: 400 });
+	}
+
+	if (platform?.env?.DB) {
+		const limit = await checkRateLimit(platform.env.DB, clientKey(event, 'enrich-search'), 60, 60);
+		if (!limit.allowed) {
+			return json({ error: 'Too many requests' }, { status: 429 });
+		}
+	}
+
 	// Try platform env first (production), then fallback to SvelteKit env (dev)
-	const tmdbKey = platform?.env?.TMDB_API_KEY || TMDB_API_KEY || '';
-	const youtubeKey = platform?.env?.YOUTUBE_API_KEY || YOUTUBE_API_KEY || '';
-	const spotifyClientId = platform?.env?.SPOTIFY_CLIENT_ID || SPOTIFY_CLIENT_ID || '';
-	const spotifyClientSecret = platform?.env?.SPOTIFY_CLIENT_SECRET || SPOTIFY_CLIENT_SECRET || '';
-	const omdbKey = platform?.env?.OMDB_API_KEY || OMDB_API_KEY || '';
+	const tmdbKey = platform?.env?.TMDB_API_KEY || env.TMDB_API_KEY || '';
+	const youtubeKey = platform?.env?.YOUTUBE_API_KEY || env.YOUTUBE_API_KEY || '';
+	const spotifyClientId = platform?.env?.SPOTIFY_CLIENT_ID || env.SPOTIFY_CLIENT_ID || '';
+	const spotifyClientSecret = platform?.env?.SPOTIFY_CLIENT_SECRET || env.SPOTIFY_CLIENT_SECRET || '';
+	const omdbKey = platform?.env?.OMDB_API_KEY || env.OMDB_API_KEY || '';
 
 	const enrichmentService = createEnrichmentService({
 		tmdb: tmdbKey,
@@ -27,7 +47,8 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 	});
 
 	try {
-		const suggestions = await enrichmentService.search(query, category as any);
+		// Cap query length before it reaches third-party APIs
+		const suggestions = await enrichmentService.search(query.slice(0, 200), category as Category);
 		return json(suggestions);
 	} catch (error) {
 		console.error('Search error:', error);

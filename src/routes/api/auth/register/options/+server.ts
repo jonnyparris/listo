@@ -3,7 +3,24 @@ import type { RequestHandler } from './$types';
 import { generateRegistrationOptionsForUser } from '$lib/server/webauthn';
 
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
-	const { username } = await request.json();
+	let payload: { username?: unknown };
+	try {
+		payload = await request.json();
+	} catch {
+		return json({ error: 'Invalid request' }, { status: 400 });
+	}
+
+	const { username } = payload;
+
+	// Validate username before it reaches a cookie or the database
+	let cleanUsername: string | null = null;
+	if (typeof username === 'string' && username.trim()) {
+		const trimmed = username.trim();
+		if (!/^[\p{L}\p{N} _-]{1,40}$/u.test(trimmed)) {
+			return json({ error: 'Username must be 1-40 characters (letters, numbers, spaces, _ or -)' }, { status: 400 });
+		}
+		cleanUsername = trimmed;
+	}
 
 	// Generate a new user ID
 	const userId = crypto.randomUUID();
@@ -11,11 +28,14 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	// Get the origin from the request headers
 	const origin = request.headers.get('origin') || 'http://localhost:5173';
 
+	// Pin RP ID when configured (production); derive from origin otherwise (dev)
+	const pinned = platform?.env?.RP_ID ? { rpID: platform.env.RP_ID, origin: platform.env.AUTH_ORIGIN } : undefined;
+
 	// Generate registration options
 	const options = await generateRegistrationOptionsForUser({
 		id: userId,
-		username: username || undefined
-	}, origin);
+		username: cleanUsername || undefined
+	}, origin, pinned);
 
 	// Store the challenge in a cookie for verification
 	cookies.set('reg-challenge', options.challenge, {
@@ -28,8 +48,6 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 
 	// Store user info for registration completion
 	// Ensure username is either a non-empty string or null (not undefined or empty string)
-	const cleanUsername = username && username.trim() ? username.trim() : null;
-
 	cookies.set(
 		'reg-user',
 		JSON.stringify({ id: userId, username: cleanUsername }),

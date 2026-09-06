@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { verifyRegistration, base64url } from '$lib/server/webauthn';
+import { createSession } from '$lib/server/auth';
 
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	if (!platform?.env?.DB) {
@@ -15,14 +16,35 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		return json({ error: 'Registration session expired' }, { status: 400 });
 	}
 
-	const userData = JSON.parse(userDataStr);
+	// Consume registration cookies immediately: one attempt per challenge
+	cookies.delete('reg-challenge', { path: '/' });
+	cookies.delete('reg-user', { path: '/' });
+
+	// Pin RP ID when configured (production); derive from origin otherwise (dev)
+	const pinned = platform?.env?.RP_ID ? { rpID: platform.env.RP_ID, origin: platform.env.AUTH_ORIGIN } : undefined;
+
+	let userData: { id?: unknown; username?: unknown };
+	try {
+		userData = JSON.parse(userDataStr);
+	} catch {
+		return json({ error: 'Registration session expired' }, { status: 400 });
+	}
+
+	// The user ID must be the UUID this server generated in register/options —
+	// a tampered cookie must not be able to mint users with arbitrary IDs.
+	if (
+		typeof userData.id !== 'string' ||
+		!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userData.id)
+	) {
+		return json({ error: 'Registration session expired' }, { status: 400 });
+	}
 
 	try {
 		// Get the origin from the request headers
 		const origin = request.headers.get('origin') || 'http://localhost:5173';
 
 		// Verify the registration response
-		const verification = await verifyRegistration(body, challenge, origin);
+		const verification = await verifyRegistration(body, challenge, origin, pinned);
 
 		if (!verification.verified || !verification.registrationInfo) {
 			console.error('Verification failed or no registration info:', {
@@ -39,7 +61,9 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const counter = credential.counter;
 
 		// Ensure username is null if undefined or empty string (D1 doesn't accept undefined)
-		const username = userData.username && userData.username.trim() ? userData.username.trim() : null;
+		// Re-validate server-side: length + charset (cookie contents are client-tamperable)
+		const rawUsername = typeof userData.username === 'string' ? userData.username.trim() : '';
+		const username = rawUsername && /^[\p{L}\p{N} _-]{1,40}$/u.test(rawUsername) ? rawUsername : null;
 
 		// Store credential
 		// credentialID is already a base64url string in the new API
@@ -86,18 +110,10 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 				.run();
 		}
 
-		// Clear registration cookies
-		cookies.delete('reg-challenge', { path: '/' });
-		cookies.delete('reg-user', { path: '/' });
+		// Registration cookies already consumed above
 
-		// Set session cookie
-		cookies.set('user-id', finalUserId, {
-			httpOnly: true,
-			secure: true,
-			sameSite: 'strict',
-			maxAge: 60 * 60 * 24 * 30, // 30 days
-			path: '/'
-		});
+		// Create server-side session (random token, hashed in D1)
+		await createSession({ cookies, platform }, finalUserId);
 
 		return json({ success: true, userId: finalUserId });
 	} catch (error) {

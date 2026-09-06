@@ -229,6 +229,11 @@ export class SpotifyPlugin implements EnrichmentPlugin {
 	 * Enrich a recommendation with Spotify metadata
 	 */
 	async enrich(id: string, category: Category): Promise<EnrichmentResult> {
+		// Strict Spotify-ID validation before URL interpolation (a crafted id like
+		// "../../v1/me" would otherwise send our bearer token to another endpoint)
+		if (!/^[A-Za-z0-9]{22}$/.test(id)) {
+			return { success: false, error: 'Invalid ID format' };
+		}
 		try {
 			const token = await this.getAccessToken();
 

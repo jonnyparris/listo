@@ -2,6 +2,36 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 /**
+ * Constant-time comparison of two fixed-length hex digests.
+ */
+function timingSafeEqualHex(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i++) {
+		diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	}
+	return diff === 0;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+	return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Constant-time admin key check. Both sides are hashed first so length
+ * differences don't leak and comparison time doesn't depend on secret content.
+ */
+async function adminKeyMatches(provided: unknown, configured: string | undefined): Promise<boolean> {
+	if (!configured || typeof provided !== 'string') return false;
+	const [providedHash, configuredHash] = await Promise.all([
+		sha256Hex(provided),
+		sha256Hex(configured)
+	]);
+	return timingSafeEqualHex(providedHash, configuredHash);
+}
+
+/**
  * Admin endpoint to merge duplicate user accounts that share the same passkey credential.
  * This happens when someone clicked "Sign Up" multiple times in different browsers
  * before the fix was deployed.
@@ -20,8 +50,8 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 	try {
 		const { adminKey } = await request.json();
 
-		// Simple admin key check (you should set this in your environment)
-		if (!adminKey || adminKey !== platform.env.ADMIN_KEY) {
+		// Constant-time admin key check (key is set via environment/secret)
+		if (!(await adminKeyMatches(adminKey, platform.env.ADMIN_KEY))) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
@@ -104,9 +134,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 	} catch (error) {
 		console.error('Migration error:', error);
-		return json(
-			{ error: error instanceof Error ? error.message : 'Migration failed' },
-			{ status: 500 }
-		);
+		return json({ error: 'Migration failed' }, { status: 500 });
 	}
 };

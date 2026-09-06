@@ -38,6 +38,10 @@ export class SyncService {
 				return { success: true };
 			}
 
+			// Snapshot the exact version being uploaded so we can tell later whether
+			// the record was edited while the request was in flight
+			const sentVersions = new Map(unsynced.map((rec) => [rec.id, rec.updated_at]));
+
 			// Send to server in batches
 			const response = await fetch('/api/recommendations/sync', {
 				method: 'POST',
@@ -53,9 +57,15 @@ export class SyncService {
 
 			const result = await response.json();
 
-			// Mark successfully synced items
+			// Mark successfully synced items — only if unchanged since upload
+			// (an edit made while the POST was in flight must stay unsynced)
 			if (result.synced && result.synced.length > 0) {
-				await dbOperations.markAsSynced(result.synced);
+				const versions: Array<{ id: string; updated_at: number }> = [];
+				for (const id of result.synced as string[]) {
+					const updated_at = sentVersions.get(id);
+					if (updated_at !== undefined) versions.push({ id, updated_at });
+				}
+				await dbOperations.markSyncedIfUnchanged(versions);
 			}
 
 			// Mark failed items with errors
@@ -124,9 +134,11 @@ export class SyncService {
 				// If local is newer, keep local (it will be synced on next push)
 			}
 
-			// Update the last pulled timestamp to now
-			// This ensures the next pull will only fetch items updated after this sync completed
-			this.setLastPulledAt(userId, Math.floor(Date.now() / 1000));
+			// Advance the pull watermark using server data, not the local clock:
+			// client clocks are unreliable and the query executed earlier than "now".
+			// Re-fetching rows at the watermark is harmless; missing rows is not.
+			const serverMax = serverRecs.reduce((max, r) => Math.max(max, r.updated_at), lastSync);
+			this.setLastPulledAt(userId, serverMax);
 
 			return { success: true };
 		} catch (error) {

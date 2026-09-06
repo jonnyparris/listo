@@ -23,6 +23,9 @@ declare global {
 				SPOTIFY_CLIENT_SECRET?: string;
 				OMDB_API_KEY?: string;
 				ADMIN_KEY?: string;
+				// WebAuthn pinning (recommended in production; derive-from-Origin otherwise)
+				RP_ID?: string;
+				AUTH_ORIGIN?: string;
 			};
 			context: {
 				waitUntil(promise: Promise<any>): void;

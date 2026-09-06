@@ -70,6 +70,10 @@ export class TMDBPlugin implements EnrichmentPlugin {
 	}
 
 	async enrich(id: string, category: Category): Promise<EnrichmentResult> {
+		// Strict ID validation before URL interpolation (path/query injection guard)
+		if (!/^\d{1,12}$/.test(id)) {
+			return { success: false, error: 'Invalid ID format' };
+		}
 		if (!this.apiKey) {
 			return {
 				success: false,
@@ -122,7 +126,8 @@ export class TMDBPlugin implements EnrichmentPlugin {
 				// Optionally fetch Rotten Tomatoes score via OMDb
 				try {
 					const imdbId = data.external_ids?.imdb_id;
-					if (this.omdbApiKey && imdbId) {
+					// imdb_id comes from upstream data — validate before URL interpolation
+					if (this.omdbApiKey && typeof imdbId === 'string' && /^tt\d{1,10}$/.test(imdbId)) {
 						const omdbResp = await fetch(`https://omdbapi.com/?apikey=${this.omdbApiKey}&i=${imdbId}`);
 						if (omdbResp.ok) {
 							const omdb = await omdbResp.json();

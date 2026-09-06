@@ -3,18 +3,47 @@ import {
 	verifyRegistrationResponse,
 	generateAuthenticationOptions,
 	verifyAuthenticationResponse,
+	type RegistrationResponseJSON,
+	type AuthenticationResponseJSON,
 	type VerifiedRegistrationResponse,
 	type VerifiedAuthenticationResponse
 } from '@simplewebauthn/server';
 
 type AuthenticatorTransportFuture = 'ble' | 'cable' | 'hybrid' | 'internal' | 'nfc' | 'smart-card' | 'usb';
 
+const VALID_TRANSPORTS = new Set<string>([
+	'ble', 'cable', 'hybrid', 'internal', 'nfc', 'smart-card', 'usb'
+]);
+
+/** Parse a stored transports JSON array, dropping invalid values. */
+export function parseStoredTransports(value: string): AuthenticatorTransportFuture[] | undefined {
+	try {
+		const parsed: unknown = JSON.parse(value);
+		if (!Array.isArray(parsed)) return undefined;
+		const valid = parsed.filter(
+			(t): t is AuthenticatorTransportFuture => typeof t === 'string' && VALID_TRANSPORTS.has(t)
+		);
+		return valid.length > 0 ? valid : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 // WebAuthn configuration
 const rpName = 'Listo';
-// Note: This runs on the server, so we use environment-based detection
-// For localhost development, we use localhost
-// For production, we extract the base domain from the request origin
-const getConfig = (requestOrigin?: string) => {
+
+// RP ID/origin derivation:
+// - If RP_ID is pinned via env (recommended in production), always use it —
+//   deriving the RP ID from a client-supplied Origin header lets an attacker
+//   on a related subdomain influence verification.
+// - Otherwise (local dev), derive from the request origin.
+const getConfig = (requestOrigin?: string, pinned?: { rpID?: string; origin?: string }) => {
+	if (pinned?.rpID) {
+		return {
+			rpID: pinned.rpID,
+			origin: pinned.origin || requestOrigin || `https://${pinned.rpID}`
+		};
+	}
 	// If we have a request origin, parse it
 	if (requestOrigin) {
 		const url = new URL(requestOrigin);
@@ -55,8 +84,12 @@ export interface User {
 /**
  * Generate registration options for a new passkey
  */
-export async function generateRegistrationOptionsForUser(user: { id: string; username?: string }, requestOrigin?: string) {
-	const { rpID } = getConfig(requestOrigin);
+export async function generateRegistrationOptionsForUser(
+	user: { id: string; username?: string },
+	requestOrigin?: string,
+	pinned?: { rpID?: string; origin?: string }
+) {
+	const { rpID } = getConfig(requestOrigin, pinned);
 
 	const options = await generateRegistrationOptions({
 		rpName,
@@ -85,11 +118,12 @@ export async function generateRegistrationOptionsForUser(user: { id: string; use
  * Verify a registration response from the browser
  */
 export async function verifyRegistration(
-	response: any,
+	response: RegistrationResponseJSON,
 	expectedChallenge: string,
-	requestOrigin?: string
+	requestOrigin?: string,
+	pinned?: { rpID?: string; origin?: string }
 ): Promise<VerifiedRegistrationResponse> {
-	const { rpID, origin } = getConfig(requestOrigin);
+	const { rpID, origin } = getConfig(requestOrigin, pinned);
 
 	return await verifyRegistrationResponse({
 		response,
@@ -104,8 +138,12 @@ export async function verifyRegistration(
  * For discoverable credentials (passkeys), we omit allowCredentials to let the browser
  * use any saved passkey for this domain. This enables the "use saved passkey" flow.
  */
-export async function generateAuthenticationOptionsForUser(user?: { id: string }, requestOrigin?: string) {
-	const { rpID } = getConfig(requestOrigin);
+export async function generateAuthenticationOptionsForUser(
+	user?: { id: string },
+	requestOrigin?: string,
+	pinned?: { rpID?: string; origin?: string }
+) {
+	const { rpID } = getConfig(requestOrigin, pinned);
 
 	const options = await generateAuthenticationOptions({
 		rpID,
@@ -123,12 +161,13 @@ export async function generateAuthenticationOptionsForUser(user?: { id: string }
  * Verify an authentication response from the browser
  */
 export async function verifyAuthentication(
-	response: any,
+	response: AuthenticationResponseJSON,
 	expectedChallenge: string,
 	credential: StoredCredential,
-	requestOrigin?: string
+	requestOrigin?: string,
+	pinned?: { rpID?: string; origin?: string }
 ): Promise<VerifiedAuthenticationResponse> {
-	const { rpID, origin } = getConfig(requestOrigin);
+	const { rpID, origin } = getConfig(requestOrigin, pinned);
 
 	// Validate credential object has all required fields
 	if (!credential || !credential.id || !credential.publicKey) {

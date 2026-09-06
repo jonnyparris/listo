@@ -40,6 +40,10 @@ export class BooksPlugin implements EnrichmentPlugin {
 	}
 
 	async enrich(id: string): Promise<EnrichmentResult> {
+		// Strict volume-ID validation before URL interpolation
+		if (!/^[A-Za-z0-9_-]{5,32}$/.test(id)) {
+			return { success: false, error: 'Invalid ID format' };
+		}
 		try {
 			const response = await fetch(`${this.baseUrl}/volumes/${id}`);
 

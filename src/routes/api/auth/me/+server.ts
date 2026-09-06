@@ -1,9 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getCurrentUser } from '$lib/server/auth';
 
-export const GET: RequestHandler = async ({ cookies }) => {
-	// Check if user is authenticated (has a user-id cookie from passkey login)
-	const authenticatedUserId = cookies.get('user-id');
+export const GET: RequestHandler = async (event) => {
+	// Validate the session token server-side (the cookie value alone proves nothing)
+	const authenticatedUserId = await getCurrentUser(event);
 
 	if (authenticatedUserId) {
 		return json({
@@ -13,18 +14,17 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	}
 
 	// If not authenticated, check for or create a session-only user ID
-	let sessionUserId = cookies.get('session-user-id');
+	// (session-only users stay local to the device; they never sync to D1)
+	let sessionUserId = event.cookies.get('session-user-id');
 
 	if (!sessionUserId) {
-		// Generate a new session-only user ID
 		sessionUserId = `session_${crypto.randomUUID()}`;
 
-		// Set session cookie (expires when browser closes)
-		cookies.set('session-user-id', sessionUserId, {
+		event.cookies.set('session-user-id', sessionUserId, {
 			httpOnly: true,
 			secure: true,
 			sameSite: 'strict',
-			path: '/',
+			path: '/'
 			// No maxAge = session cookie (expires when browser closes)
 		});
 	}

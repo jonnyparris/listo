@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { verifyAuthentication, base64url } from '$lib/server/webauthn';
+import { verifyAuthentication, base64url, parseStoredTransports } from '$lib/server/webauthn';
+import { createSession } from '$lib/server/auth';
 
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	if (!platform?.env?.DB) {
@@ -14,13 +15,23 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		return json({ error: 'Authentication session expired' }, { status: 400 });
 	}
 
+	// Consume the challenge immediately: one verification attempt per challenge,
+	// so failed attempts can't be retried or replayed with a stale response.
+	cookies.delete('auth-challenge', { path: '/' });
+
+	// Pin RP ID when configured (production); derive from origin otherwise (dev)
+	const pinned = platform?.env?.RP_ID ? { rpID: platform.env.RP_ID, origin: platform.env.AUTH_ORIGIN } : undefined;
+
 	try {
 		// Get the origin from the request headers
 		const origin = request.headers.get('origin') || 'http://localhost:5173';
 
 		// Get the credential from database
 		// body.id is already a base64url-encoded string from the browser
-		const credentialId = body.id;
+		const credentialId = typeof body?.id === 'string' ? body.id : '';
+		if (!/^[A-Za-z0-9._-]{1,512}$/.test(credentialId)) {
+			return json({ error: 'Invalid credential id' }, { status: 400 });
+		}
 
 		const credential = await platform.env.DB.prepare(
 			'SELECT id, user_id, public_key, counter, transports FROM credentials WHERE id = ?'
@@ -37,8 +48,8 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			id: credential.id as string,
 			publicKey: base64url.decode(credential.public_key as string),
 			counter: (credential.counter as number) ?? 0,
-			transports: credential.transports ? JSON.parse(credential.transports as string) : undefined
-		}, origin);
+			transports: credential.transports ? parseStoredTransports(credential.transports as string) : undefined
+		}, origin, pinned);
 
 		if (!verification.verified) {
 			return json({ error: 'Verification failed' }, { status: 400 });
@@ -51,17 +62,10 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			.bind(verification.authenticationInfo?.newCounter ?? 0, credential.id)
 			.run();
 
-		// Clear auth challenge cookie
-		cookies.delete('auth-challenge', { path: '/' });
+		// Challenge already consumed above
 
-		// Set session cookie
-		cookies.set('user-id', credential.user_id as string, {
-			httpOnly: true,
-			secure: true,
-			sameSite: 'strict',
-			maxAge: 60 * 60 * 24 * 30, // 30 days
-			path: '/'
-		});
+		// Create server-side session (random token, hashed in D1)
+		await createSession({ cookies, platform }, credential.user_id as string);
 
 		return json({ success: true, userId: credential.user_id });
 	} catch (error) {

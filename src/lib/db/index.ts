@@ -29,10 +29,13 @@ export const dbOperations = {
 	},
 
 	// Update a recommendation
+	// NOTE: callers that pass an explicit `updated_at` (server sync pull) keep it —
+	// clobbering it with "now" would corrupt last-write-wins conflict resolution
+	// and reorder the list after every sync. Only genuine local edits bump it.
 	async updateRecommendation(id: string, changes: Partial<LocalRecommendation>) {
 		return db.recommendations.update(id, {
 			...changes,
-			updated_at: Math.floor(Date.now() / 1000)
+			updated_at: changes.updated_at ?? Math.floor(Date.now() / 1000)
 		});
 	},
 
@@ -107,14 +110,19 @@ export const dbOperations = {
 			.toArray();
 	},
 
-	// Mark recommendations as synced
-	async markAsSynced(ids: string[]) {
-		return db.recommendations.bulkUpdate(
-			ids.map((id) => ({
-				key: id,
-				changes: { synced: true }
-			}))
-		);
+	// Mark recommendations as synced — but only if they were not edited while
+	// the sync request was in flight. Records are matched on the updated_at that
+	// was actually uploaded; anything changed since stays unsynced and will be
+	// re-pushed on the next sync instead of being silently lost.
+	async markSyncedIfUnchanged(items: Array<{ id: string; updated_at: number }>) {
+		return db.transaction('rw', db.recommendations, async () => {
+			for (const item of items) {
+				const rec = await db.recommendations.get(item.id);
+				if (rec && rec.updated_at === item.updated_at) {
+					await db.recommendations.update(item.id, { synced: true, sync_error: undefined });
+				}
+			}
+		});
 	},
 
 	// Mark sync error

@@ -1,8 +1,16 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { checkRateLimit, clientKey } from '$lib/server/ratelimit';
 
-export const POST: RequestHandler = async ({ request, platform }) => {
-	if (!platform?.env?.AI) {
+export const POST: RequestHandler = async (event) => {
+	const { request, platform } = event;
+	if (!platform?.env?.AI || !platform.env.DB) {
 		return json({ error: 'AI not available' }, { status: 500 });
+	}
+
+	// Cost control: this endpoint spends Workers AI tokens per call
+	const limit = await checkRateLimit(platform.env.DB, clientKey(event, 'ai-condense'), 10, 60);
+	if (!limit.allowed) {
+		return json({ error: 'Too many requests' }, { status: 429 });
 	}
 
 	try {
@@ -13,6 +21,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		}
 
 		const cleanText = text
+			.slice(0, 5000) // bound prompt size and abuse surface
 			.replace(/<[^>]*>/g, '')
 			.replace(/&[a-z]+;/gi, ' ')
 			.trim();
@@ -44,9 +53,6 @@ ${cleanText}`;
 		return json({ condensed });
 	} catch (error) {
 		console.error('AI condensation error:', error);
-		return json(
-			{ error: error instanceof Error ? error.message : 'Failed to condense text' },
-			{ status: 500 }
-		);
+		return json({ error: 'Failed to condense text' }, { status: 500 });
 	}
 };

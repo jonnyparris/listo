@@ -21,6 +21,26 @@ CREATE TABLE IF NOT EXISTS credentials (
 -- Index for credentials lookup
 CREATE INDEX IF NOT EXISTS idx_credentials_user_id ON credentials(user_id);
 
+-- Sessions table (server-side session store)
+-- The cookie holds a random token; only its SHA-256 hash is stored here.
+CREATE TABLE IF NOT EXISTS sessions (
+	token_hash TEXT PRIMARY KEY,
+	user_id TEXT NOT NULL,
+	created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+	expires_at INTEGER NOT NULL,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
+
+-- Fixed-window rate limiting for costly endpoints (Workers AI, enrichment APIs)
+CREATE TABLE IF NOT EXISTS rate_limits (
+	key TEXT PRIMARY KEY,
+	window_start INTEGER NOT NULL,
+	count INTEGER NOT NULL DEFAULT 0
+);
+
 -- Recommendations table
 CREATE TABLE IF NOT EXISTS recommendations (
 	id TEXT PRIMARY KEY,
@@ -71,10 +91,7 @@ CREATE TRIGGER IF NOT EXISTS recommendations_au AFTER UPDATE ON recommendations 
 	WHERE rowid = new.rowid;
 END;
 
--- Trigger to update updated_at timestamp
-CREATE TRIGGER IF NOT EXISTS recommendations_update_timestamp
-AFTER UPDATE ON recommendations
-FOR EACH ROW
-BEGIN
-	UPDATE recommendations SET updated_at = unixepoch() WHERE id = NEW.id;
-END;
+-- NOTE: no auto-update trigger for updated_at on purpose. Sync clients send
+-- their own updated_at for last-write-wins conflict resolution; a trigger that
+-- overwrites updated_at on every UPDATE would silently defeat that and cause
+-- sync loops/lost updates.

@@ -50,6 +50,10 @@ export class YouTubePlugin implements EnrichmentPlugin {
 	}
 
 	async enrich(id: string): Promise<EnrichmentResult> {
+		// Strict video-ID validation before URL interpolation
+		if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+			return { success: false, error: 'Invalid ID format' };
+		}
 		if (!this.apiKey) {
 			return {
 				success: false,
@@ -89,7 +93,9 @@ export class YouTubePlugin implements EnrichmentPlugin {
 			channel: snippet.channelTitle,
 			description: snippet.description,
 			thumbnail_url: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url,
-			url: `https://www.youtube.com/watch?v=${id}`
+			url: `https://www.youtube.com/watch?v=${id}`,
+			// UI + share text read youtube_url (matches spotify_url convention)
+			youtube_url: `https://www.youtube.com/watch?v=${id}`
 		};
 
 			return {

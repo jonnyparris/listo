@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Input } from './ui';
 	import type { Category } from '$lib/types';
 	import type { SearchSuggestion } from '$lib/services/enrichment/types';
@@ -28,6 +29,16 @@
 	let loading = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
 	let selectedIndex = $state(-1);
+	let searchSeq = 0;
+	let containerEl: HTMLElement | undefined;
+	let lastSelectionAt = 0;
+
+	function inputHasFocus(): boolean {
+		// activeElement-based (not :focus) — :focus can fail to match while the
+		// window is unfocused or mid-tap, which would wrongly suppress the list
+		const input = containerEl?.querySelector('input');
+		return !!input && (document.activeElement === input || containerEl!.contains(document.activeElement));
+	}
 
 	async function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -58,24 +69,36 @@
 			return;
 		}
 
+		// Sequence responses: stale results from older queries are dropped so a
+		// fast typist never sees suggestions for text they already deleted
+		const seq = ++searchSeq;
 		loading = true;
 		try {
 			const response = await fetch(
 				`/api/enrichment/search?query=${encodeURIComponent(query)}&category=${category}`
 			);
+			if (seq !== searchSeq) return;
 			if (response.ok) {
 				suggestions = await response.json();
-				showSuggestions = true;
+				// Re-open the dropdown only when the input still has focus — a slow
+				// response must not pop the list open after the user already picked
+				// a suggestion or moved on
+				showSuggestions = inputHasFocus();
 				selectedIndex = -1;
 			}
 		} catch (error) {
 			console.error('TMDB search error:', error);
 		} finally {
-			loading = false;
+			if (seq === searchSeq) loading = false;
 		}
 	}
 
 	async function selectSuggestion(suggestion: SearchSuggestion) {
+		// Authoritatively close: kill pending debounced searches and in-flight
+		// responses so nothing can re-open the dropdown right after selection
+		lastSelectionAt = Date.now();
+		searchSeq++;
+		clearTimeout(debounceTimer);
 		value = suggestion.title;
 		showSuggestions = false;
 		suggestions = [];
@@ -112,7 +135,11 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
+		if (e.key === 'Escape' && showSuggestions) {
+			// Close only the dropdown and swallow the event — the window-level
+			// handler would otherwise close the whole add form and destroy input
+			e.preventDefault();
+			e.stopPropagation();
 			showSuggestions = false;
 			selectedIndex = -1;
 			return;
@@ -137,19 +164,42 @@
 		}
 	}
 
-	// Refresh suggestions when category changes
+	// Refresh suggestions when the CATEGORY changes (not on every keystroke —
+		// that path goes through the debounced handleInput). Reading `category`
+		// as the only tracked dependency keeps this effect off the typing path.
+	let prevCategory: Category | null = null;
 	$effect(() => {
-		if (value.length >= 2 && ['movie','series'].includes(category)) {
-			searchTMDB(value);
-			showSuggestions = true;
-		} else if (value.length < 2) {
-			suggestions = [];
-			showSuggestions = false;
-		}
+		const cat = category;
+		untrack(() => {
+			if (prevCategory === null) {
+				prevCategory = cat; // first run: just record the initial category
+				return;
+			}
+			if (cat === prevCategory) return;
+			prevCategory = cat;
+			clearTimeout(debounceTimer);
+			searchSeq++; // any in-flight search is now stale
+			if (Date.now() - lastSelectionAt < 250) {
+				// The category changed as a side-effect of picking a suggestion —
+				// don't immediately re-search and pop the dropdown back open
+				suggestions = [];
+				showSuggestions = false;
+				selectedIndex = -1;
+				return;
+			}
+			if (value.length >= 2 && ['movie', 'series'].includes(cat)) {
+				searchTMDB(value);
+			} else {
+				searchSeq++; // invalidate any in-flight search
+				suggestions = [];
+				showSuggestions = false;
+				selectedIndex = -1;
+			}
+		});
 	});
 </script>
 
-<div class="relative tmdb-autocomplete-container">
+<div class="relative tmdb-autocomplete-container" bind:this={containerEl}>
 	<Input
 		{value}
 		{placeholder}
