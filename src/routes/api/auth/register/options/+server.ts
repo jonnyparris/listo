@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { generateRegistrationOptionsForUser } from '$lib/server/webauthn';
+import { generateRegistrationOptionsForUser, getConfig } from '$lib/server/webauthn';
 
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	let payload: { username?: unknown };
@@ -30,6 +30,15 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 
 	// Pin RP ID when configured (production); derive from origin otherwise (dev)
 	const pinned = platform?.env?.RP_ID ? { rpID: platform.env.RP_ID, origin: platform.env.AUTH_ORIGIN } : undefined;
+
+	// Reject disallowed origins before issuing registration options or setting
+	// registration cookies. Without this, an attacker-controlled Origin would
+	// pick the expected RP ID and origin for the whole ceremony.
+	try {
+		getConfig(origin, pinned);
+	} catch {
+		return json({ error: 'Origin not allowed for registration' }, { status: 400 });
+	}
 
 	// Generate registration options
 	const options = await generateRegistrationOptionsForUser({
