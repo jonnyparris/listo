@@ -32,12 +32,28 @@ export function parseStoredTransports(value: string): AuthenticatorTransportFutu
 // WebAuthn configuration
 const rpName = 'Listo';
 
+// Hostnames listo is served from. WebAuthn scopes credentials to the RP ID,
+// and the browser only ever sends a passkey to the hostname it was created
+// for, so both production hosts must be listed or passkeys registered on the
+// other host stop working. Anything outside this list is rejected: an
+// attacker-controlled Origin must never pick the expected RP ID or origin.
+const ALLOWED_ORIGINS = new Set([
+	'https://listo.jonnyparris.club',
+	'https://listo-a46.pages.dev'
+]);
+
+export interface WebAuthnConfig {
+	rpID: string;
+	origin: string;
+}
+
 // RP ID/origin derivation:
 // - If RP_ID is pinned via env (recommended in production), always use it —
 //   deriving the RP ID from a client-supplied Origin header lets an attacker
 //   on a related subdomain influence verification.
-// - Otherwise (local dev), derive from the request origin.
-const getConfig = (requestOrigin?: string, pinned?: { rpID?: string; origin?: string }) => {
+// - Otherwise, accept the request origin only when it is in the production
+//   allowlist (localhost stays open for local dev).
+export const getConfig = (requestOrigin?: string, pinned?: { rpID?: string; origin?: string }): WebAuthnConfig => {
 	if (pinned?.rpID) {
 		return {
 			rpID: pinned.rpID,
@@ -54,12 +70,18 @@ const getConfig = (requestOrigin?: string, pinned?: { rpID?: string; origin?: st
 				origin: requestOrigin
 			};
 		}
-		// Use the actual hostname as RP ID for production
-		// This ensures passkeys work consistently on the domain they were registered on
-		return {
-			rpID: url.hostname,
-			origin: requestOrigin
-		};
+		// In production the RP ID must come from a server-known hostname, never
+		// from the client-supplied Origin. Reject anything not in the allowlist
+		// instead of deriving expectedRPID/expectedOrigin from the request.
+		if (ALLOWED_ORIGINS.has(requestOrigin)) {
+			return {
+				rpID: url.hostname,
+				origin: requestOrigin
+			};
+		}
+		throw new Error(
+			`Origin ${requestOrigin} is not allowed. WebAuthn is served from: ${[...ALLOWED_ORIGINS].join(', ')}`
+		);
 	}
 	// Default for development
 	return {

@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { generateAuthenticationOptionsForUser, base64url } from '$lib/server/webauthn';
+import { generateAuthenticationOptionsForUser, getConfig, base64url } from '$lib/server/webauthn';
 
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	if (!platform?.env?.DB) {
@@ -16,8 +16,20 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		// By completely omitting the credentials parameter, the library won't include
 		// allowCredentials in the options, enabling discoverable credential flow
 
+		// Pin RP ID when configured (production); derive from origin otherwise (dev)
+		const pinned = platform?.env?.RP_ID ? { rpID: platform.env.RP_ID, origin: platform.env.AUTH_ORIGIN } : undefined;
+
+		// Reject disallowed origins before issuing authentication options or
+		// setting a challenge cookie (see getConfig: the Origin must be a
+		// server-known hostname, never attacker-controlled).
+		try {
+			getConfig(origin, pinned);
+		} catch {
+			return json({ error: 'Origin not allowed for login' }, { status: 400 });
+		}
+
 		// Generate authentication options for discoverable credentials
-		const options = await generateAuthenticationOptionsForUser(undefined, origin);
+		const options = await generateAuthenticationOptionsForUser(undefined, origin, pinned);
 
 		// Store the challenge in a cookie for verification
 		cookies.set('auth-challenge', options.challenge, {
