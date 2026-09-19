@@ -1260,9 +1260,19 @@
 				throw new Error('Failed to suggest category');
 			}
 
-			const { category } = await response.json();
+			const { category, confidence, alternatives } = await response.json();
 			formCategory = category;
-			toastStore.success(`Suggested: ${formatCategory(category)}`);
+			const pct = Math.round((confidence ?? 0) * 100);
+			const runnerUp = alternatives?.[0];
+			if (pct >= 80) {
+				toastStore.success(`Suggested: ${formatCategory(category)}`);
+			} else if (runnerUp) {
+				toastStore.info(
+					`Guessing: ${formatCategory(category)} (${pct}% sure) — also possible: ${formatCategory(runnerUp.category)}`
+				);
+			} else {
+				toastStore.info(`Guessing: ${formatCategory(category)} (${pct}% sure)`);
+			}
 		} catch (error) {
 			console.error('AI suggestion failed:', error);
 			toastStore.error('Failed to suggest category');

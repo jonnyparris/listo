@@ -21,6 +21,48 @@ const VALID_CATEGORIES: Category[] = [
 	'quote'
 ];
 
+// Category descriptions reused as Jev choice criteria — the same guidance the
+// old llama prompt carried, now structured so untrusted text stays in `state`
+// instead of being interpolated into a prompt.
+const CATEGORY_CRITERIA: Record<Category, string> = {
+	series: 'TV shows, series, documentaries',
+	movie: 'Films and movies',
+	youtube: 'YouTube videos or channels',
+	podcast: 'Podcasts and audio content',
+	artist: 'Music artists and bands',
+	song: 'Individual songs or tracks',
+	genre: 'Music genres',
+	restaurant: 'Restaurants and dining places',
+	recipe: 'Cooking recipes',
+	activity: 'Activities, hobbies, things to do',
+	'video-game': 'Video games',
+	'board-game': 'Board games, card games, tabletop games',
+	book: 'Books, novels, non-fiction',
+	'graphic-novel': 'Graphic novels, comics, manga',
+	quote: 'Quotes, sayings, phrases'
+};
+
+interface JevCategoryAnswer {
+	choice?: string;
+	probabilities?: Record<string, number>;
+}
+
+// The AI binding returns a `{ state, result }` envelope whose `result` holds
+// `{ answers }`; older deployments returned the flat `{ answers }` shape.
+function extractCategoryAnswer(response: unknown): JevCategoryAnswer | null {
+	if (!response || typeof response !== 'object') return null;
+	const envelope = response as Record<string, unknown>;
+	const inner =
+		envelope.answers ??
+		(envelope.result && typeof envelope.result === 'object'
+			? (envelope.result as Record<string, unknown>).answers
+			: undefined);
+	if (!inner || typeof inner !== 'object') return null;
+	const answer = (inner as Record<string, unknown>).category;
+	if (!answer || typeof answer !== 'object') return null;
+	return answer as JevCategoryAnswer;
+}
+
 export const POST: RequestHandler = async (event) => {
 	const { request, platform } = event;
 	if (!platform?.env?.AI || !platform.env.DB) {
@@ -40,54 +82,41 @@ export const POST: RequestHandler = async (event) => {
 			return json({ error: 'Text is required' }, { status: 400 });
 		}
 
-		// Cap input size: bounds the prompt (and prompt-injection surface)
+		// Cap input size: bounds the request payload
 		const trimmedText = text.trim().slice(0, 1000);
 
-		// Use Cloudflare Workers AI to classify the text
-		const prompt = `You are a helpful assistant that categorizes recommendations. Given a text input, determine which category it belongs to.
-
-Valid categories:
-- series: For TV shows, series, documentaries
-- movie: For films and movies
-- youtube: For YouTube videos or channels
-- podcast: For podcasts and audio content
-- artist: For music artists and bands
-- song: For individual songs or tracks
-- genre: For music genres
-- restaurant: For restaurants and dining places
-- recipe: For cooking recipes
-- activity: For activities, hobbies, things to do
-- video-game: For video games
-- board-game: For board games, card games, tabletop games
-- book: For books, novels, non-fiction
-- graphic-novel: For graphic novels, comics, manga
-- quote: For quotes, sayings, phrases
-
-Input text: "${trimmedText}"
-
-Respond with ONLY the category name from the list above, nothing else.`;
-
-		const response = await platform.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-			messages: [{ role: 'user', content: prompt }]
+		// Calibrated classification: Jev scores every category and returns
+		// probabilities, so the UI knows when to trust the pick.
+		const response = await platform.env.AI.run('typesafe/jev', {
+			state: { text: trimmedText },
+			questions: {
+				category: {
+					type: 'choice',
+					instructions:
+						'Which category best describes the recommendation in `text`? Judge by what kind of thing it names, not by titles of existing items.',
+					criteria: CATEGORY_CRITERIA
+				}
+			}
 		});
 
-		// Extract the category from the response
-		let suggestedCategory = response.response?.trim().toLowerCase();
-
-		// Validate and clean up the response
-		if (suggestedCategory && VALID_CATEGORIES.includes(suggestedCategory as Category)) {
-			return json({ category: suggestedCategory });
+		const answer = extractCategoryAnswer(response);
+		const choice = answer?.choice;
+		if (!choice || !VALID_CATEGORIES.includes(choice as Category)) {
+			return json({ error: 'Failed to suggest category' }, { status: 500 });
 		}
 
-		// If invalid, try to find a match in the response
-		for (const cat of VALID_CATEGORIES) {
-			if (suggestedCategory?.includes(cat)) {
-				return json({ category: cat });
-			}
-		}
+		const probabilities = answer?.probabilities ?? {};
+		const alternatives = Object.entries(probabilities)
+			.map(([category, probability]) => ({ category, probability }))
+			.filter((a) => a.category !== choice && VALID_CATEGORIES.includes(a.category as Category))
+			.sort((a, b) => b.probability - a.probability)
+			.slice(0, 3);
 
-		// Default fallback
-		return json({ category: 'activity' });
+		return json({
+			category: choice,
+			confidence: answer?.probabilities?.[choice] ?? 0,
+			alternatives
+		});
 	} catch (error) {
 		console.error('AI suggestion error:', error);
 		return json({ error: 'Failed to suggest category' }, { status: 500 });
