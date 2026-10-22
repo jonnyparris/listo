@@ -34,7 +34,7 @@ export const POST: RequestHandler = async (event) => {
 
 ${cleanText}`;
 
-		const response = await platform.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+		const response = await platform.env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
 			messages: [{ role: 'user', content: prompt }]
 		});
 
