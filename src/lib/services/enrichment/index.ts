@@ -13,6 +13,19 @@ import type { EnrichmentPlugin, EnrichmentResult, SearchSuggestion } from './typ
 		private plugins: Map<Category, EnrichmentPlugin> = new Map();
 	
 		constructor(apiKeys: { tmdb?: string; youtube?: string; spotify_client_id?: string; spotify_client_secret?: string; omdb?: string } = {}) {
+		// Register stub plugins first; each real plugin registered below
+		// replaces its category so a placeholder can never shadow it.
+		const stubPlugins = [
+			new RestaurantsPlugin(),
+			new PodcastsPlugin()
+		];
+
+		for (const plugin of stubPlugins) {
+			for (const category of plugin.supportedCategories) {
+				this.plugins.set(category, plugin);
+			}
+		}
+
 			// Register TMDB plugin if API key is available
 			if (apiKeys.tmdb) {
 				const tmdbPlugin = new TMDBPlugin(apiKeys.tmdb, apiKeys.omdb);
@@ -41,18 +54,6 @@ import type { EnrichmentPlugin, EnrichmentResult, SearchSuggestion } from './typ
 			const spotifyPlugin = new SpotifyPlugin(apiKeys.spotify_client_id, apiKeys.spotify_client_secret);
 			for (const category of spotifyPlugin.supportedCategories) {
 				this.plugins.set(category, spotifyPlugin);
-			}
-		}
-
-		// Register stub plugins (will be replaced with real implementations)
-		const stubPlugins = [
-			new RestaurantsPlugin(),
-			new PodcastsPlugin()
-		];
-
-		for (const plugin of stubPlugins) {
-			for (const category of plugin.supportedCategories) {
-				this.plugins.set(category, plugin);
 			}
 		}
 	}
