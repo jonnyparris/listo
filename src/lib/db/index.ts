@@ -94,9 +94,15 @@ export const dbOperations = {
 	},
 
 	// Soft delete a recommendation
+	// A delete is a genuine local edit, so it must bump updated_at just like
+	// updateRecommendation: the server applies last-write-wins on updated_at, and
+	// a pushed record whose updated_at equals the stored value is skipped, which
+	// would strand the delete on this device.
 	async deleteRecommendation(id: string) {
+		const now = Math.floor(Date.now() / 1000);
 		return db.recommendations.update(id, {
-			deleted_at: Math.floor(Date.now() / 1000),
+			deleted_at: now,
+			updated_at: now,
 			synced: false
 		});
 	},
