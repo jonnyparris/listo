@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { LocalRecommendation } from '$lib/types';
+import { MAX_PUSH_BATCH } from '$lib/services/sync-contract';
 
-const MAX_BATCH = 500;
 const CATEGORIES = new Set([
 	'series', 'movie', 'youtube', 'podcast', 'artist', 'song', 'genre',
 	'restaurant', 'recipe', 'activity', 'video-game', 'board-game',
@@ -123,8 +123,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		return json({ error: 'Expected { recommendations: [...] }' }, { status: 400 });
 	}
 
-	if (recommendations.length > MAX_BATCH) {
-		return json({ error: `Batch too large (max ${MAX_BATCH})` }, { status: 413 });
+	if (recommendations.length > MAX_PUSH_BATCH) {
+		return json({ error: `Batch too large (max ${MAX_PUSH_BATCH})` }, { status: 413 });
 	}
 
 	const db = platform.env.DB;

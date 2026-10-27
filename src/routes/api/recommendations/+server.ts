@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { PULL_PAGE_SIZE } from '$lib/services/sync-contract';
 
 export const GET: RequestHandler = async ({ url, platform, locals }) => {
 	if (!platform?.env?.DB) {
@@ -18,10 +19,14 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
 	try {
 		const { results } = await platform.env.DB
 			.prepare(
+				// Ascending order so a truncated page advances the client's pull
+				// cursor instead of skipping every row below the page's newest
+				// timestamp. The client re-requests from the watermark until a
+				// short page confirms the backlog is drained.
 				`SELECT * FROM recommendations
 				WHERE user_id = ? AND updated_at >= ?
-				ORDER BY updated_at DESC
-				LIMIT 2000`
+				ORDER BY updated_at ASC
+				LIMIT ${PULL_PAGE_SIZE}`
 			)
 			.bind(userId, since)
 			.all();
